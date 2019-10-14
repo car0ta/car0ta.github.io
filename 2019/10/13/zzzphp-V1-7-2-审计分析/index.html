@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+  
+<head><meta name="generator" content="Hexo 3.9.0">
+  <meta charset="utf-8">
+  <meta name="author" content="董沅鑫, yuanxin.me@gmail.com">
+  
+  
+  
+  <title>zzzphp V1.7.2 审计分析 | car0ta</title>
+
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  
+    <meta name="keywords" content="Vulnerability,">
+  
+
+  <script>
+    console.log('\n%c Hexo-theme-bmw v4.0 ' + '%c 🎉 https://github.com/dongyuanxin/theme-bmw 🎉\n' + '\n%c View demo online ' + '%c 🔍 https://godbmw.com/ 🔍  \n' , 'color: #fadfa3; background: #030307; padding:3px 0;', '', 'color: #fadfa3; background: #030307; padding:3px 0;', '');
+  </script>
+
+  
+
+  
+
+  
+    <link rel="icon" href="/images/favicon.ico">
+    <link rel="apple-touch-icon" href="/images/touch-icon.png">
+  
+
+  <link href="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/base.css">
+<link rel="stylesheet" href="/icon/iconfont.css">
+<link rel="stylesheet" href="/css/github-markdown.css">
+<link rel="stylesheet" href="/css/highlight.css">
+
+  <script src="/js/util.js"></script>
+<script src="/js/valine.min.js"></script>
+
+  
+
+  
+    <link href="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.css" rel="stylesheet">
+    <script src="https://cdn.bootcss.com/aplayer/1.10.1/APlayer.min.js" async></script>
+  
+
+  
+    <link href="https://cdn.bootcss.com/social-share.js/1.0.16/css/share.min.css" rel="stylesheet">
+  
+  
+  <script src="//cdn.bootcss.com/jquery/3.3.1/jquery.min.js" async></script>
+  
+  
+    <script src="//cdn.jsdelivr.net/npm/leancloud-storage@3.11.0/dist/av-min.js"></script>
+  
+
+</head>
+
+  <body>
+
+    
+
+    <div id="app">
+
+      <div class="header-wrap">
+  <header>
+    <div class="site-brand">
+      <div class="site-title">
+        <a href="/">car0ta</a>
+      </div>
+    </div>
+    <nav class="site-navigation">
+      <ul class="nav-menu">
+      
+        <li class="nav-item" data-path="/">
+          
+            <a 
+              href="/"
+              target="_self"
+            >
+              主页
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/archives/">
+          
+            <a 
+              href="/archives/"
+              target="_self"
+            >
+              归档
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/tags/">
+          
+            <a 
+              href="/tags/"
+              target="_self"
+            >
+              标签
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/friends/">
+          
+            <a 
+              href="/friends/"
+              target="_self"
+            >
+              友链
+            </a>
+          
+        </li>
+      
+        <li class="nav-item" data-path="/about/">
+          
+            <a 
+              href="/about/"
+              target="_self"
+            >
+              关于
+            </a>
+          
+        </li>
+      
+      </ul>
+    </nav>
+    <i class="iconfont icon-menu"></i>
+  </header>
+</div>
+
+<script>
+  let links = document.querySelectorAll('.nav-item');
+  for(let link of links){
+    let childrenLink = link.querySelector('ul');
+    link.addEventListener('mouseenter', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown active";
+      }
+    })
+    link.addEventListener('mouseleave', () => {
+      if(childrenLink) {
+        childrenLink.className = "nav-menu--dropdown";
+      }
+    })
+  }
+  let rootRealPath = getRealPath(window.location.pathname, true);
+  for(let link of links) {
+    let linkPath = link.getAttribute("data-path");
+    if(linkPath && getRealPath(linkPath, true) === rootRealPath) {
+      link.className = "nav-item hover";
+    }
+  }
+
+  let iconMenu = document.querySelector("i.iconfont.icon-menu"),
+    iconMenuClicked = false;
+  let navDOM = document.querySelector("nav.site-navigation");
+  iconMenu.addEventListener("click", () => {
+    iconMenuClicked 
+      ? navDOM.className = "site-navigation active"
+      : navDOM.className = "site-navigation";
+    iconMenuClicked = !iconMenuClicked;
+  })
+</script>
+
+      
+
+
+
+
+
+
+
+
+<div class="container post-index">
+
+  
+
+<div class="post">
+  <h1 class="article-title">
+    <span>zzzphp V1.7.2 审计分析</span>
+  </h1>
+  <div class="article-top-meta">
+    <span>
+      发布 : 
+      2019-10-13
+    </span>
+    
+    
+      <span>
+        浏览 : <span class="article-timer" data-identity="zzzphp-V1-7-2-审计分析"></span>
+      </span>
+    
+  </div>
+
+  
+
+  <div class="article-content">
+    <div class="markdown-body">
+      <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>这个是 8 月底交的第一个水洞，昨天发布在 CNVD 上：<a href="https://www.cnvd.org.cn/flaw/show/CNVD-2019-30678" target="_blank" rel="noopener">CNVD-2019-30678</a>。最近课业繁多，因此没有很多时间去学习 web，正好昨天刚发布，就整理复习一下发篇博客，等忙完这波我就又可以做回 dog 了。最近学习的感受就是：一定要多做笔记，不动笔墨不读书。</p>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>从 index.php 进入，开始审计。</p>
+<p>在 /inc/zzz_client.php 中第 58 行：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$location=getlocation();</span><br></pre></td></tr></table></figure>
+
+<p>跟进到 /inc/zzz_main.php 中 getlocation() 函数，在第 1521 行：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$location = getform( <span class="string">'location'</span>, <span class="string">'get'</span> );</span><br></pre></td></tr></table></figure>
+
+<p>继续追踪 getform() 函数，跟进到 /inc/zzz_main.php 第 605 行：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">getform</span><span class="params">( $name, $source = <span class="string">'both'</span>, $type = NULL, $default = NULL )</span> </span>&#123;</span><br><span class="line">	<span class="keyword">switch</span> ( $source ) &#123;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">'post'</span>:</span><br><span class="line">			$data = _POST( $name );</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">'get'</span>:</span><br><span class="line">			$data = _GET( $name );</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">'cookie'</span>:</span><br><span class="line">			$data = _REQUEST($name);</span><br><span class="line">            <span class="keyword">if</span>($data) &#123;</span><br><span class="line">                 set_cookie( $name,$data ) ;</span><br><span class="line">            &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">                $data=get_cookie( $name,$data ) ;</span><br><span class="line">            &#125;</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">		<span class="keyword">case</span> <span class="string">'both'</span>:</span><br><span class="line">			$data = _POST( $name ) ? : _GET( $name );</span><br><span class="line">			<span class="keyword">break</span>;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> ( !is_null( $type ) ) &#123;</span><br><span class="line">        <span class="keyword">if</span>(ifch($default))&#123;</span><br><span class="line">            $err = checkstr( $data, $type, $default );</span><br><span class="line">        &#125;<span class="keyword">else</span>&#123;</span><br><span class="line">            $err = checkstr( $data, $type, $name );</span><br><span class="line">        &#125;</span><br><span class="line">		<span class="keyword">if</span> ( $err[ <span class="string">'code'</span> ] == <span class="number">0</span> )&#123;</span><br><span class="line">			<span class="keyword">if</span> ( $default == <span class="string">'layer'</span> ) &#123;</span><br><span class="line">				layererr( $err[ <span class="string">'err'</span> ] );</span><br><span class="line">			&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">				back( $err[ <span class="string">'err'</span> ] );</span><br><span class="line">			&#125;</span><br><span class="line">        &#125;  </span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> ( !is_null( $default ) &amp;&amp; !ifch( $default) ) &#123;</span><br><span class="line">		$data = <span class="keyword">empty</span>( $data ) ? $default : $data;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> txt_html( $data );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>不难发现参数 name 可控，再看倒数第二行函数的返回值经过了 txt_html() 函数处理。</p>
+<p>跟进到 /inc/zzz_main.php 中的第 787 行：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">txt_html</span><span class="params">( $s )</span> </span>&#123;    </span><br><span class="line">	<span class="keyword">if</span> ( !$s ) <span class="keyword">return</span> $s;</span><br><span class="line">	<span class="keyword">if</span> ( is_array( $s ) ) &#123; <span class="comment">// 数组处理</span></span><br><span class="line">		<span class="keyword">foreach</span> ( $s <span class="keyword">as</span> $key =&gt; $value ) &#123;</span><br><span class="line">			$string[ $key ] = txt_html( $value );</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">        <span class="keyword">if</span> (get_magic_quotes_gpc())  $s = addslashes( $s );        </span><br><span class="line">		$s = trim( $s );</span><br><span class="line">		<span class="comment">//array("'"=&gt;"&amp;apos;",'"'=&gt;"&amp;quot;",'&lt;'=&gt; "&amp;lt;",'&gt;'=&gt; "&amp;gt;");     </span></span><br><span class="line">        <span class="keyword">if</span> ( DB_TYPE == <span class="string">'access'</span> ) &#123;</span><br><span class="line">			<span class="comment">//$s= toutf( $s );</span></span><br><span class="line">			$s = str_replace( <span class="string">"'"</span>, <span class="string">"&amp;apos;"</span>, $s );</span><br><span class="line">			$s = str_replace( <span class="string">'"'</span>, <span class="string">"&amp;quot;"</span>, $s );</span><br><span class="line">			$s = str_replace( <span class="string">"&lt;"</span>, <span class="string">"&amp;lt;"</span>, $s );</span><br><span class="line">			$s = str_replace( <span class="string">"&gt;"</span>, <span class="string">"&amp;gt;"</span>, $s );</span><br><span class="line">		&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">			$s = htmlspecialchars( $s,ENT_QUOTES,<span class="string">'UTF-8'</span> );       </span><br><span class="line">		&#125; 				</span><br><span class="line">		$s = str_replace( <span class="string">"\t"</span>, <span class="string">' &amp;nbsp; &amp;nbsp; &amp;nbsp; &amp;nbsp;'</span>, $s );		</span><br><span class="line">		$s = preg_replace(<span class="string">'/script/i'</span>, <span class="string">'scr1pt'</span>, $s );</span><br><span class="line">		$s = preg_replace(<span class="string">'/document/i'</span>, <span class="string">'d0cument'</span>, $s );		</span><br><span class="line">		$s = preg_replace(<span class="string">'/＼.php/i'</span>, <span class="string">'．php'</span>, $s );</span><br><span class="line">        $s = preg_replace(<span class="string">'/ascii/i'</span>, <span class="string">'asc11'</span>, $s );</span><br><span class="line">		$s = preg_replace(<span class="string">'/eval/i'</span> , <span class="string">'eva1'</span>, $s );</span><br><span class="line">		$s = str_replace( <span class="keyword">array</span>(<span class="string">"base64_decode"</span>, <span class="string">"assert"</span>, <span class="string">""</span>), <span class="string">""</span>, $s );</span><br><span class="line">		$s = str_replace( <span class="keyword">array</span>(<span class="string">"\r\n"</span>,<span class="string">"\n"</span>), <span class="string">"&lt;br/&gt;"</span>, $s );</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> $s;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>发现数组处理的代码逻辑存在缺陷，如果参数 s 是数组的话，经过处理后仍然原样返回（倒数第二行）。</p>
+<p>我们可以简单测试一下，在上面代码基础上添加如下代码进行本地验证：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">$b = txt_html($_GET[a]);</span><br><span class="line">var_dump($b);</span><br></pre></td></tr></table></figure>
+
+<p>然后我们用 get 方法传递一个数组 a，如：<code>?a[]=&lt;&gt;</code></p>
+<p>经过测试我们发现很多危险字符都没有过滤掉，如引号、括号等。</p>
+<p> ![01](<a href="https://raw.githubusercontent.com/car0ta/photo/master/blog/zzzphp" target="_blank" rel="noopener">https://raw.githubusercontent.com/car0ta/photo/master/blog/zzzphp</a> V1.7.2 审计分析/01.png)</p>
+<p>getform() 函数的 name 参数可控，txt_html() 函数的数组处理存在缺陷。结合这两点说明 getform() 函数存在漏洞。</p>
+<h2 id="漏洞利用—sql"><a href="#漏洞利用—sql" class="headerlink" title="漏洞利用—sql"></a>漏洞利用—sql</h2><p>全局搜索 getform() 函数，很多处都有调用该函数。如 /plugins/sms/sms_list.php 中的 php 代码：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">&lt;?php</span></span><br><span class="line"><span class="keyword">require</span> <span class="string">'../../inc/zzz_admin.php'</span>;</span><br><span class="line">$act=getform(<span class="string">"act"</span>,<span class="string">"get"</span>);</span><br><span class="line">$id=getform(<span class="string">"id"</span>,<span class="string">"post"</span>);</span><br><span class="line"><span class="keyword">switch</span> ($act) &#123;</span><br><span class="line">	<span class="keyword">case</span> <span class="string">'del'</span>:			</span><br><span class="line">	db_delete(<span class="string">'sms'</span>,<span class="keyword">array</span>(<span class="string">'id'</span>=&gt;$id));</span><br><span class="line">	<span class="keyword">exit</span>;		</span><br><span class="line">	<span class="keyword">break</span>;	</span><br><span class="line">	<span class="keyword">case</span> <span class="string">'delall'</span>:			</span><br><span class="line">	db_delete(<span class="string">'sms'</span>,<span class="keyword">array</span>(<span class="string">'smsonoff'</span>=&gt;<span class="number">0</span>));</span><br><span class="line">	phpgo (<span class="string">'sms_list.php'</span>);</span><br><span class="line">	<span class="keyword">break</span>;	</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>通过 get 方法传参 <code>?act=del</code> ，id 通过post 传一个数组 <code>id[]=xxx</code> 。</p>
+<p>跟进 db_delete() 函数，在 /inc/zzz_db.php 第 274 行：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">db_delete</span><span class="params">( $table, $where, $d = NULL )</span> </span>&#123;</span><br><span class="line">	$db = $_SERVER[ <span class="string">'db'</span> ];</span><br><span class="line">	$d = $d ? $d : $db;</span><br><span class="line">	<span class="keyword">if</span> ( !$d ) <span class="keyword">return</span> <span class="keyword">FALSE</span>;</span><br><span class="line">	<span class="keyword">if</span> ( ifnum( $where ) ) &#123;</span><br><span class="line">		$where = table_id( $table ) . <span class="string">'='</span> . $where;</span><br><span class="line">	&#125; <span class="keyword">elseif</span> ( is_array( $where ) ) &#123;</span><br><span class="line">		$arrkey = array_keys( $where );</span><br><span class="line">		<span class="keyword">if</span> ( $arrkey[ <span class="number">0</span> ] === <span class="number">0</span> ) &#123;</span><br><span class="line">			$where = <span class="keyword">array</span>( table_id( $table ) =&gt; $where );</span><br><span class="line">		&#125;</span><br><span class="line">	&#125; <span class="keyword">elseif</span> ( $where == <span class="string">'recy'</span> ) &#123;</span><br><span class="line">		<span class="keyword">if</span> ( $table == <span class="string">'content'</span> )$where = <span class="keyword">array</span>( <span class="string">'c_onoff'</span> =&gt; <span class="number">2</span> );</span><br><span class="line">	&#125;</span><br><span class="line">	$whereadd = db_cond_to_sqladd( $where );</span><br><span class="line">	<span class="keyword">return</span> db_exec( <span class="string">"DELETE FROM [dbpre]$table $whereadd"</span>, $d );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>注意，这里 <code>$where</code> 是一个二维数组 <code>array(&#39;id&#39;=&gt;$id)</code>。</p>
+<p>关键代码在倒数第三行，因此跟进 db_cond_to_sqladd() 函数，在 /inc/zzz_db.php 第1058 行：</p>
+<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">function</span> <span class="title">db_cond_to_sqladd</span><span class="params">( $where )</span> </span>&#123;</span><br><span class="line">	$s = <span class="string">''</span>;	</span><br><span class="line">	<span class="keyword">if</span> ( DB_TYPE == <span class="string">'access'</span> )$where = toutf( $where );</span><br><span class="line">	<span class="keyword">if</span> ( !<span class="keyword">empty</span>( $where ) ) &#123;</span><br><span class="line">		$s = <span class="string">' WHERE '</span>;</span><br><span class="line">		<span class="keyword">if</span> ( is_array( $where ) ) &#123;</span><br><span class="line">			<span class="keyword">foreach</span> ( $where <span class="keyword">as</span> $k =&gt; $v ) &#123;</span><br><span class="line">				<span class="keyword">if</span> ( !is_array( $v ) ) &#123;</span><br><span class="line">					$v = ( ifnum( $v ) ) ? $v : <span class="string">"'"</span> . ( $v ) . <span class="string">"'"</span>;</span><br><span class="line">					$s .= <span class="string">"`$k`=$v AND "</span>;</span><br><span class="line">				&#125; <span class="keyword">elseif</span> ( <span class="keyword">isset</span>( $v[ <span class="number">0</span> ] ) ) &#123;</span><br><span class="line">					<span class="comment">// OR 效率比 IN 高</span></span><br><span class="line">					$s .= <span class="string">'('</span>;</span><br><span class="line">					<span class="comment">//$v = array_reverse($v);</span></span><br><span class="line">					<span class="keyword">foreach</span> ( $v <span class="keyword">as</span> $v1 ) &#123;</span><br><span class="line">						$v1 = ( ifnum( $v1 ) ) ? $v1 : <span class="string">"'"</span> . ( $v1 ) . <span class="string">"'"</span>;</span><br><span class="line">						$s .= <span class="string">"`$k`=$v1 OR "</span>;</span><br><span class="line">					&#125;</span><br><span class="line">					$s = substr( $s, <span class="number">0</span>, <span class="number">-4</span> );</span><br><span class="line">					$s .= <span class="string">') AND '</span>;</span><br><span class="line"></span><br><span class="line">					<span class="comment">/*</span></span><br><span class="line"><span class="comment">					$ids = implode(',', $v);</span></span><br><span class="line"><span class="comment">					$s .= "$k IN ($ids) AND ";</span></span><br><span class="line"><span class="comment">					*/</span></span><br><span class="line">				&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">					<span class="keyword">foreach</span> ( $v <span class="keyword">as</span> $k1 =&gt; $v1 ) &#123;</span><br><span class="line">						<span class="keyword">if</span> ( $k1 == <span class="string">'LIKE'</span> ) &#123;</span><br><span class="line">							$k1 = <span class="string">' LIKE '</span>;</span><br><span class="line">							$v1 = <span class="string">"%$v1%"</span>;</span><br><span class="line">						&#125;</span><br><span class="line">						$v1 = ( is_int( $v1 ) || is_float( $v1 ) || $k1==<span class="string">'='</span> || $k1==<span class="string">'BETWEEN '</span> ) ? $v1 : <span class="string">"'"</span> . ( $v1 ) . <span class="string">"'"</span>;</span><br><span class="line">						$s .= <span class="string">"`$k`$k1$v1 AND "</span>;</span><br><span class="line">					&#125;</span><br><span class="line">				&#125;</span><br><span class="line">			&#125;</span><br><span class="line">			$s = substr( $s, <span class="number">0</span>, <span class="number">-4</span> );</span><br><span class="line">		&#125; <span class="keyword">else</span> &#123;</span><br><span class="line">			$s .= $where;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> $s;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>分析函数逻辑可知最终返回值 $s 为：</p>
+<figure class="highlight autohotkey"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$s = <span class="string">" where (`id`='xxx')"</span>    //xxx 即为 post 传递的 id 的值</span><br></pre></td></tr></table></figure>
+
+<p>最终执行的 sql 语句为：</p>
+<figure class="highlight n1ql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">DELETE</span> <span class="keyword">FROM</span> zzz_sms <span class="keyword">where</span> (<span class="symbol">`id`</span>=<span class="string">'xxx'</span>);</span><br></pre></td></tr></table></figure>
+
+<p>因此我们可以通过构造 /plugins/sms/sms_list.php 中可控参数 act 和 id 的值达到 sql 注入的效果，例如：<br>（<a href="http://www.zzz172.com" target="_blank" rel="noopener">www.zzz172.com</a> 为虚拟域名）</p>
+<p> ![02](<a href="https://raw.githubusercontent.com/car0ta/photo/master/blog/zzzphp" target="_blank" rel="noopener">https://raw.githubusercontent.com/car0ta/photo/master/blog/zzzphp</a> V1.7.2 审计分析/02.png)</p>
+<p>但由于 zzz_sms 表中没有数据，所以没有达到预期结果。如果我们在 zzz_sms 中插入一条数据：</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">insert</span> <span class="keyword">into</span> zzz_sms (<span class="keyword">id</span>) <span class="keyword">values</span> (<span class="number">1</span>);</span><br></pre></td></tr></table></figure>
+
+<p>随后我们发现页面延迟显示，从而验证此处的确存在漏洞。</p>
+<h2 id="修复建议"><a href="#修复建议" class="headerlink" title="修复建议"></a>修复建议</h2><p>从漏洞分析过程中可以发现关键点是  /inc/zzz_main.php 中的 txt_html() 函数对数组的处理不当，因此最简单直接的修复方法就是加固此处的数组处理，将数组中键值的过滤处理写回到数组中。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>此处的 sql 注入漏洞的主要原因是 /inc/zzz_main.php 中 txt_html() 函数对传入的数组参数处理不当，而 getform() 函数的参数又可控，二者结合形成了漏洞。在 /plugins/sms/sms_list.php 中利用该漏洞完成 sql 注入。但完成 sql 注入的前提是 zzz_sms 表中存在数据，因此该漏洞虽然没有暴露，但存在极大的安全隐患。</p>
+
+    </div>
+  </div>
+  
+    <div class="copy-right">
+      <div class="markdown-body">
+        <blockquote>
+        
+        
+          本文作者 : car0ta <br/>
+        
+        原文链接 : <a href="">https://car0ta.github.io/2019/10/13/zzzphp-V1-7-2-审计分析/</a><br>
+        版权声明 : 本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> 许可协议。转载请注明出处！
+        </blockquote>
+      </div>
+    </div>
+  
+  
+  
+    <div class="social-share"
+  style="margin-top: -2rem"
+  data-wechat-qrcode-title="<p>微信扫一扫</p>"
+  data-wechat-qrcode-helper="<p>微信右上角, 扫一扫分享</p>"
+   data-sites="qzone, qq, weibo, wechat, douban, google, facebook, twitter" 
+  
+>
+  <span style="color: #6b7487; font-size: 1.4rem;">分享到: </span>
+</div>
+<script src="https://cdn.bootcss.com/social-share.js/1.0.16/js/social-share.min.js" async>
+  
+
+  
+    <div id="reward">
+  
+    <p id="reward-meta">知识 & 情怀 | 二者兼得</p>
+  
+  <button id="reward-btn">
+    
+    <span>投食</span>
+  </button>
+  <div id="reward-qrcode">
+    
+      <div class="reward-qrcode--container">
+        <img class="qrcode-img" src="/images/wechat.png" alt="微信扫一扫, 向我投食">
+        <p class="qrcode-meta">微信扫一扫, 向我投食</p>
+      </div>
+    
+      <div class="reward-qrcode--container">
+        <img class="qrcode-img" src="/images/alipay.png" alt="支付宝扫一扫, 向我投食">
+        <p class="qrcode-meta">支付宝扫一扫, 向我投食</p>
+      </div>
+    
+  </div>
+
+</div>
+
+<script>
+  (() => {
+    let button = document.querySelector('#reward-btn'),
+      qrcode = document.querySelector('#reward-qrcode'),
+      display = false;
+    
+    button.addEventListener('click', () => {
+      qrcode.style.display = display ? 'none' : 'block'
+      display = !display
+    }, false)
+  })()
+</script>
+  
+
+  <div class="article-footer">
+    <div class="article-meta pull-left">
+      <span>
+        
+          <i class="iconfont icon-06tags"></i>标签: 
+          
+          <span class="span--tag">
+            <a href="/tags/Vulnerability/">
+              #Vulnerability
+            </a>
+          </span>
+          
+        
+      </span>
+    </div>
+    <div class="article-meta pull-right">
+    </div>
+  </div>
+</div>
+
+
+  <aside id="sidebar">
+    <p id="sidebar-header"></p>
+    <ol id="sidebar-toc"></ol>
+  </aside>
+  <script async>setTimeout(generateToc, 10);</script>
+
+
+  <nav class="post-navigation">
+    
+      <div class="nav-pre">
+        <i class="iconfont icon-prev"></i>
+        上一篇:
+        <a href="/2019/09/19/禅道全版本rce漏洞分析/" target="_self">禅道全版本rce漏洞分析</a>
+      </div>
+    
+    
+  </nav>
+
+   
+
+  
+    <script defer>
+const valineAPI = (() => {
+  try {
+    AV.init("Hyq9wkH495DgNHWhDQCOfQSp-gzGzoHsz", "WaR7nrzhliHj9aVwdQzkdlGd");
+  } catch(error) {}
+  const isExist = (identity) => {
+    identity = identity || getRealPath();
+    let query = new AV.Query('Timer');
+    return new Promise((resolve, reject) => {
+      query.equalTo("identity", identity);
+      query.find().then(results => {
+        resolve(results.length > 0);
+      }, error => reject(error));
+    })
+  }
+
+  const _get = (identity) => {
+    let query = null;
+    if(identity && identity instanceof Array){
+      let querys = [];
+      for(let i = 0; i < identity.length; ++i) {
+        querys[i] = new AV.Query('Timer');
+        querys[i].equalTo('identity', identity[i]);
+      }
+      query = AV.Query.or.apply(null ,querys);
+    } else {
+      identity = identity || getRealPath();
+      query = new AV.Query("Timer");
+      query.equalTo("identity", identity);
+    }
+
+    return new Promise((resolve, reject) => {
+      query.find()
+      .then(results => resolve(results))
+      .catch(error => reject(error))
+    })
+  }
+
+  const create = (identity) => {
+    identity = identity || getRealPath();
+    return new Promise((resolve, reject) => {
+      let Todo = AV.Object.extend('Timer');
+      let todo = new Todo();
+      todo.set("times", 1);
+      todo.set("identity", identity);
+      todo.save().then(res => resolve(true), error => reject(error));
+    })
+  }
+
+  const update = (identity) => {
+    identity = identity || getRealPath();
+    return new Promise((resolve, reject) => {
+      let query = new AV.Query('Timer');
+      query.equalTo("identity", identity);
+      query.find().then(todos => {
+        todos.forEach(todo => {
+          todo.set("times", todo.attributes.times + 1);
+        });
+        return AV.Object.saveAll(todos);
+      }).then(todos => resolve(true), error => reject(error));
+    })
+  }
+
+  return {
+    isExist,
+    _get,
+    update,
+    create
+  }
+})()
+
+const calcAndWriteTimes = () => {
+  let isPost = true;
+
+  let timerAllDOM = document.querySelectorAll(".article-timer");
+
+  if(isPost) {
+    let identity = timerAllDOM[0].getAttribute("data-identity");
+    valineAPI.isExist(identity)
+    .then(exist => {
+      if(exist) {
+        return valineAPI.update(identity);
+      }
+      return new Promise(resolve => resolve(true));
+    })
+    .then( succuess => valineAPI._get(identity))
+    .then( result => timerAllDOM[0].innerText = result[0].attributes.times)
+    .catch(error => console.log(error.message))
+    return ;
+  }
+
+  let timerDOMCache = {};
+
+  for(let timerDOM of timerAllDOM) {
+    let identity = timerDOM.getAttribute("data-identity");
+    if(timerDOMCache.hasOwnProperty(identity)){
+      timerDOMCache[identity].dom.push(timerDOM);
+    }else{
+      timerDOMCache[identity] = {
+        dom: [timerDOM],
+        times: undefined
+      };
+    }
+  }
+
+  let identities = Object.keys(timerDOMCache);
+  valineAPI._get(identities).then(results => {
+    for(let result of results) {
+      let {identity, times} = result.attributes;
+      timerDOMCache[identity].times = times;
+      timerDOMCache[identity].dom.map(item => item.innerText = times);
+    }
+    for(let identity of identities) {
+      if(timerDOMCache[identity].times){
+        continue;
+      }
+      timerDOMCache[identity].dom.map(item => item.innerText = 1);
+      valineAPI.create(identity);
+    }
+  }).catch(error => console.log(error.message))
+}
+
+if(true){
+  calcAndWriteTimes();
+}
+</script>
+   
+
+</div>
+
+
+      <footer>
+  <p class="site-info">
+    <br>
+    Theme - <a href="https://github.com/dongyuanxin/theme-bmw">BMW</a> | Made With 💗 | Authored by <a href="https://hybk2.cn/">car0ta</a>
+    <br>
+    
+  </p>
+</footer>
+
+
+
+<script>
+const timeToNowDOM = document.querySelector("#time-to-now");
+const startTimestamp = new Date(2018, 1, 10).getTime();
+
+const updateTimeStr = () => {
+  let offset = parseInt(
+      (new Date().getTime() - startTimestamp) / 1000,
+      10
+    ),
+    day = Math.floor(offset / 86400),
+    hour = Math.floor((offset % 86400) / 3600),
+    minute = Math.floor(((offset % 86400) % 3600) / 60),
+    second = Math.floor(((offset % 86400) % 3600) % 60);
+  timeToNowDOM.innerHTML =
+    day + "天" + hour + "小时" + minute + "分钟" + second + "秒";
+  setTimeout(updateTimeStr, 500);
+}
+
+setTimeout(updateTimeStr, 500);
+</script>
+
+
+      <div class="back-to-top hidden">
+  <span>
+    <i class="iconfont icon-60"></i><span></span>%
+  </span>
+</div>
+
+<script>
+const updateIconToTop = percent => {
+  let dom = document.querySelector(".back-to-top span span");
+  dom.innerText = percent;
+  if(percent < 1) {
+    document.querySelector(".back-to-top").className = "back-to-top hidden";
+  } else {
+    document.querySelector(".back-to-top").className = "back-to-top";
+  }
+}
+
+const handleScoll = () => {
+  let isRunning = false;
+  return () => {
+    if (isRunning) return;
+    isRunning = true;
+    window.requestAnimationFrame(timestamp => {
+      let scrollTop =
+          document.documentElement.scrollTop || document.body.scrollTop,
+        scrollHeight =
+          document.documentElement.scrollHeight ||
+          document.body.scrollHeight,
+        clientHeight =
+          document.documentElement.clientHeight ||
+          document.body.clientHeight;
+      isRunning = false;
+      if (scrollTop <= 1) {
+        updateIconToTop(0);
+        return;
+      }
+      if (scrollTop + clientHeight >= scrollHeight) {
+        updateIconToTop(100);
+      } else {
+        updateIconToTop(parseInt(
+          100 * scrollTop / (scrollHeight - clientHeight),
+          10
+        ));
+      }
+    });
+  };
+}
+
+const backToTop = () => {
+  let scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop,
+    delay = 10,
+    time = 200;
+  if (scrollTop <= 20) {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+    return;
+  }
+  let step = Math.ceil(scrollTop * delay / time);
+  let timer = setInterval(() => {
+    scrollTop =
+      document.documentElement.scrollTop || document.body.scrollTop;
+    if (scrollTop - step <= 0) {
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      clearInterval(timer);
+    } else {
+      document.documentElement.scrollTop = scrollTop - step;
+      document.body.scrollTop = scrollTop - step;
+    }
+  }, delay);
+}
+
+document.addEventListener("scroll", handleScoll(), false);
+
+document.querySelector(".back-to-top").addEventListener("click", backToTop, false);
+
+</script>
+
+    </div>
+
+    
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/MathJax.js?config=TeX-MML-AM_CHTML" async></script>
+<script>
+  (() => {
+    const mathjaxConfig = {
+      showProcessingMessages: false, //关闭js加载过程信息
+      messageStyle: "none", //不显示信息
+      jax: ["input/TeX", "output/HTML-CSS"],
+      tex2jax: {
+        inlineMath: [["$", "$"], ["\\(", "\\)"]], //行内公式选择符
+        displayMath: [["$$", "$$"], ["\\[", "\\]"]], //段内公式选择符
+        skipTags: ["script", "noscript", "style", "textarea", "pre", "code", "a"] //避开某些标签
+      },
+      "HTML-CSS": {
+        availableFonts: ["STIX", "TeX"], //可选字体
+        showMathMenu: false //关闭右击菜单显示
+      }
+    }
+
+    let mathjaxInterval = setInterval(() => {
+      if(!window.MathJax){
+        return;
+      }
+      window.MathJax.Hub.Config(mathjaxConfig)
+      window.MathJax.Hub.Queue(["Typeset", MathJax.Hub, document.getElementById('app')])
+
+      clearInterval(mathjaxInterval)
+    }, 10)    
+  })()
+</script>
+    
+
+    <script src="https://cdn.bootcss.com/fancybox/3.5.2/jquery.fancybox.min.js" async></script>
+<script async>
+  let fancyTimer = setInterval(function(){
+    if(!window.$){
+      return;
+    }
+    $(document).ready(function() {
+      $(".post img").each(function () {
+        if($(this).parent().get(0).tagName.toLowerCase() === "a") {
+          return;
+        }
+        // $(this).attr("data-fancybox", "gallery"); // if you add 'data-fancybox', img will display after showed
+        var element = document.createElement("a");
+        $(element).attr("data-fancybox", "gallery");
+        $(element).attr("href", $(this).attr("src"));
+        $(this).wrap(element);
+      });
+      
+      clearInterval(fancyTimer);
+    });
+  }, 10);
+</script>
+
+    
+  </body>
+
+</html>
