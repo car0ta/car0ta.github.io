@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://car0ta.github.io/"/>
-  <updated>2020-02-10T11:39:10.302Z</updated>
+  <updated>2019-12-07T05:59:27.150Z</updated>
   <id>https://car0ta.github.io/</id>
   
   <author>
@@ -15,20 +15,6 @@
   </author>
   
   <generator uri="http://hexo.io/">Hexo</generator>
-  
-  <entry>
-    <title>prvd 项目流程分析</title>
-    <link href="https://car0ta.github.io/2020/02/10/prvd-%E9%A1%B9%E7%9B%AE%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90/prvd-%E9%A1%B9%E7%9B%AE%E6%B5%81%E7%A8%8B%E5%88%86%E6%9E%90/"/>
-    <id>https://car0ta.github.io/2020/02/10/prvd-项目流程分析/prvd-项目流程分析/</id>
-    <published>2020-02-10T11:39:10.000Z</published>
-    <updated>2020-02-10T11:39:10.302Z</updated>
-    
-    <summary type="html">
-    
-    </summary>
-    
-    
-  </entry>
   
   <entry>
     <title>Discuz！ML V3.X 代码注入漏洞分析</title>
