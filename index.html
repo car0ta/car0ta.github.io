@@ -7,7 +7,90 @@
     error: 'Copy error',
     noSupport: 'The browser does not support'
   }
-} </script></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="false"><div class="author-info"><div class="author-info__avatar text-center"><img src="/img/avatar.png"></div><div class="author-info__name text-center">car0ta</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">6</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">5</span></a></div></div></div><nav class="no-bg" id="nav"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">car0ta</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/links">Links</a><a class="site-page" href="/about">About</a></span><span class="pull-right"></span></div><div id="site-info"><div id="site-title">car0ta</div><div id="site-sub-title">car0ta's blog</div></div></nav><div id="content-outer"><div class="layout" id="content-inner"><div class="recent-post-item article-container"><a class="article-title" href="/2020/01/28/prvd项目流程分析/">prvd 项目流程分析</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-01-28</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/php/">php</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/RASP/">RASP</a></span><div class="content"><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p><a href="https://github.com/fate0/prvd" target="_blank" rel="noopener">prvd</a> 是一个 PHP 运行时漏洞检测系统，该项目依赖于 <a href="https://github.com/fate0/xmark" target="_blank" rel="noopener">xmark</a> 扩展，并由 <a href="https://github.com/getsentry/sentry" target="_blank" rel="noopener">sentry</a> 提供客户端界面。prvd 有两种模式——taint 和 payload，payload 模式一直开启，taint模式选择开启。taint 模式在 source 点上打上标记，在 filter 中传递这个标记，在 sink 点检测标记。payload 模式在原始数据末尾加上 payload，不用关心数据传递过程而直接在 sink 点观测。</p>
+} </script></head><body><i class="fa fa-arrow-right" id="toggle-sidebar" aria-hidden="true"></i><div id="sidebar" data-display="false"><div class="author-info"><div class="author-info__avatar text-center"><img src="/img/avatar.png"></div><div class="author-info__name text-center">car0ta</div><div class="author-info__description text-center"></div><hr><div class="author-info-articles"><a class="author-info-articles__archives article-meta" href="/archives"><span class="pull-left">Articles</span><span class="pull-right">7</span></a><a class="author-info-articles__tags article-meta" href="/tags"><span class="pull-left">Tags</span><span class="pull-right">5</span></a></div></div></div><nav class="no-bg" id="nav"><div id="page-header"><span class="pull-left"> <a id="site-name" href="/">car0ta</a></span><i class="fa fa-bars toggle-menu pull-right" aria-hidden="true"></i><span class="pull-right menus">   <a class="site-page" href="/">Home</a><a class="site-page" href="/archives">Archives</a><a class="site-page" href="/tags">Tags</a><a class="site-page" href="/links">Links</a><a class="site-page" href="/about">About</a></span><span class="pull-right"></span></div><div id="site-info"><div id="site-title">car0ta</div><div id="site-sub-title">car0ta's blog</div></div></nav><div id="content-outer"><div class="layout" id="content-inner"><div class="recent-post-item article-container"><a class="article-title" href="/2020/02/20/ThinkPHP6任意文件操作漏洞分析/">ThinkPHP6 任意文件操作漏洞分析</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-02-20</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/audit/">audit</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/php/">php</a></span><div class="content"><p>##漏洞介绍 </p>
+<p>2020年1月10日，ThinkPHP 团队发布一个补丁更新，修复了一处由不安全的 SessionId 导致的任意文件操作漏洞。该漏洞允许攻击者在目标环境启用 session 的条件下创建任意文件以及删除任意文件，并在实际环境中还可能 getshell。具体受影响版本为ThinkPHP 6.0.0-6.0.1 。 </p>
+<p>##环境搭建 </p>
+<p>环境要求： PHP &gt;= 7.1.0，ThinkPHP6.0.0-6.0.1</p>
+<p>ThinkPHP6.0.x 必须通过 composer 方式安装和更新，无法通过 git 下载安装 </p>
+<p>安装 composer（Linux 或者 macOS） </p>
+<figure class="highlight groovy"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">curl -sS <span class="string">https:</span><span class="comment">//getcomposer.org/installer | php </span></span><br><span class="line"></span><br><span class="line">mv composer.phar <span class="regexp">/usr/</span>local<span class="regexp">/bin/</span>composer</span><br></pre></td></tr></table></figure>
+
+<p>国内镜像 </p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">composer config -g repo<span class="selector-class">.packagist</span> composer https:<span class="comment">//mirrors.aliyun.com/composer/</span></span><br></pre></td></tr></table></figure>
+
+<p>安装 ThinkPHP6.0.1 </p>
+<figure class="highlight dsconfig"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">//稳定版</span><br><span class="line"></span><br><span class="line"><span class="string">composer </span><span class="built_in">create-project</span> <span class="string">topthink/</span><span class="string">think=</span>6.0.1 <span class="string">tp6</span></span><br></pre></td></tr></table></figure>
+
+<p>验证安装 </p>
+<p>切换到 tp6 目录下执行命令：php think run </p>
+<p>在浏览器中打开网址：127.0.0.1:8000/ </p>
+<p>看到欢迎界面说明成功安装 </p>
+<h2 id="漏洞分析"><a href="#漏洞分析" class="headerlink" title="漏洞分析"></a>漏洞分析</h2><p>访问 ThinkPHP 官方 GitHub 找到相关的 commit 信息： </p>
+<p><a href="https://github.com/top-think/framework/commit/1bbe75019ce6c8e0101a6ef73706217e406439f2" target="_blank" rel="noopener">https://github.com/top-think/framework/commit/1bbe75019ce6c8e0101a6ef73706217e406439f2</a> </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/01.png" alt="01"></p>
+<p>修正代码位于 src/think/session/Store.php 文件的121 行处，仅仅在原来的基础上多加了一个 ctype_alnum 函数，该函数的用法如下：</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/02.png" alt="02"></p>
+<p>我们定位到本地 web 目录下的文件：vendor/topthink/framework/src/think/session/Store.php，该文件主要是 session 相关的操作，包括 session 的设置、获取和保存等。 </p>
+<p>定位到 setId 函数，逻辑是判断参数 id 是否是长度为32的字符串，是则将该参数作为 session id，否则将利用 session_create_id 函数来生成唯一的 session id。 </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/03.png" alt="03"></p>
+<p>而修正后的代码多了 ctype_alnum 函数检查参数 id 是否为字母和数字的组合。 根据 Store.php 文件和添加的 ctype_alnum 函数猜测可能是在存储 session 时触发了相关的文件操作漏洞。 </p>
+<p>在 Store.php 文件中查找 setId 发现在 save 函数中调用了 setId 函数，代码中还存在 write 和 delete 函数涉及到文件的写入和删除。 </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/04.png" alt="04"></p>
+<p>我们跟进 write 函数，跳转到 session 接口驱动文件：vendor/topthink/framework/src/think/contract/SessionHandlerInterface.php，查找实现了这个接口的类文件一共有两个 —— Cache 和 File，而 Cache 类文件中的 write 函数无法利用，所以跳转到 File 类文件：vendor/topthink/framework/src/think/session/driver/File.php </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/05.png" alt="05"></p>
+<p>继续跟进 writeFile 函数，File.php 的 170 行：</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/06.png" alt="06"></p>
+<p>file_put_contents 函数涉及到文件写入，危险函数找到了，下一步需要回溯寻找可控点。 </p>
+<p>我把涉及到的函数放到一起便于回溯可控点： </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/07.png" alt="07"></p>
+<p><code>$this-&gt;id</code> 是 session_id，由 setId 函数设置；<code>$this-&gt;data</code> 是 session 数据，默认为空，由 set 函数设置。 我们查找调用了 setId 函数的地方：vendor/topthink/framework/src/think/middleware/SessionInit.php </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/08.png" alt="08"></p>
+<p><code>$cookieName</code> 的值是 <code>PHPSESSID</code>，因为默认环境配置中没有 session.var_session_id 参数，因此进入 else 分支，调用了 cookie 函数，易知 <code>$sessionId</code> 是 cookie 中名为 <code>PHPSESSID</code> 的值。</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/09.png" alt="09"></p>
+<p>分析到这里，file_put_contents 函数的文件名已经可控，那我们看下能不能实现在任意位置写入文件。由于在 write 函数中调用了 getFilename 函数，使得文件名带上了 sess_ 的前缀，并且如果目录不存在会自动创建，因此我们可以利用目录回退符(../)来实现任意文件写入。而写入文件的内容取决于 <code>$this-&gt;data</code> 的值，默认为空，需要由实际的后端业务逻辑来决定，只有当后端业务中存在 session 值可控的代码时方可 getshell。</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/10.png" alt="10"></p>
+<p>再来看一下 delete 函数，如果目录不存在并不会创建目录，如果开发环境是 Windows 系统的话，我们可以利用 Windows 系统的一个特性 —— 如果目录不存在就会跳过当前目录，从而实现任意文件删除。如果是Linux 或者mac OS 系统则没有这一特性，但我们可以结合任意文件写入创建目录，从而根据已知目录实现任意文件删除。</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/11.png" alt="11"></p>
+<h2 id="漏洞复现"><a href="#漏洞复现" class="headerlink" title="漏洞复现"></a>漏洞复现</h2><p>根据以上的漏洞分析，我们可以总结出文件写入和删除的利用条件： </p>
+<p>要实现任意文件写入，需要目标环境开启 session，session 值可控且不为空；</p>
+<p>要实现任意文件删除，需要目标环境开启 session，session 值为空。</p>
+<h3 id="构造场景"><a href="#构造场景" class="headerlink" title="构造场景"></a>构造场景</h3><p>本文在 MacOS 10.14.6 系统中进行复现，由于默认环境中没有开启 session，且没有 session 设置的代码，所以我们需要构造相应的场景。 </p>
+<ol>
+<li>开启 session：</li>
+</ol>
+<p>在 app/middleware.php 文件中删除最后一行注释 </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/12.png" alt="12"> </p>
+<ol start="2">
+<li>添加设置 session 值的代码：</li>
+</ol>
+<p>由于默认环境中 session 为空，所以我们需要添加代码来测试任意文件写入漏洞。 </p>
+<p>在 app/controller/Index.php 文件中添加方框中代码。 </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/13.png" alt="13"></p>
+<h3 id="任意文件写入"><a href="#任意文件写入" class="headerlink" title="任意文件写入"></a>任意文件写入</h3><p>使用 burp 作为中间代理构造如下 GET 请求，并使得 cookie 参数中名为 PHPSESSID 的值为 32 位的字符串。</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/14.png" alt="14"></p>
+<p>可以发现默认在 runtime/session/ 目录下新增了一个 session 文件，session 值经过了序列化。</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/15.png" alt="15"></p>
+<p>我们还可以实现 getshell，因为 ThinkPHP6.0.x 的控制器文件在 app/controller/ 目录下，所以我们在该目录下写入文件。</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/16.png" alt="16"></p>
+<p>成功写入文件：</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/17.png" alt="17"></p>
+<p>访问控制器验证成功 getshell：</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/18.png" alt="18"></p>
+<h3 id="任意文件删除"><a href="#任意文件删除" class="headerlink" title="任意文件删除"></a>任意文件删除</h3><p>要实现任意文件删除首先要利用任意文件写入构造已知路径，从而利用目录回退符(../)跳转到任意目录实现文件删除。 构造如下请求： </p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/19.png" alt="19"></p>
+<p>可以发现创建了新的目录 sess_ ：</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/20.png" alt="20"></p>
+<p>再次构造如下请求删除 14.log 文件，注意因为要使 session 数据为空，所以不能添加 GET 参数。</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/21.png" alt="21"></p>
+<p>验证成功删除文件：</p>
+<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/22.png" alt="22"></p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>这个漏洞是由于一处不安全的 session id 造成的任意文件操作，最终找到了危险函数 file_get_contents，通过回溯参数寻找可控点发现并没有过滤处理，因此整个分析利用也相对容易。官方给出的补丁中在检查 session id 时添加了 ctype_alnum 函数，很好地过滤了非法构造 session id 的情形。</p>
+<p>##参考 </p>
+<p><a href="https://paper.seebug.org/1114/#_2" target="_blank" rel="noopener">https://paper.seebug.org/1114/#_2</a></p>
+<p><a href="https://hacpai.com/article/1579965339516" target="_blank" rel="noopener">https://hacpai.com/article/1579965339516</a></p>
+<p><a href="https://www.smi1e.top/thinkphp6-0-任意文件写入漏洞/" target="_blank" rel="noopener">https://www.smi1e.top/thinkphp6-0-%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E5%86%99%E5%85%A5%E6%BC%8F%E6%B4%9E/</a></p>
+<p><a href="https://woj.app/6032.html" target="_blank" rel="noopener">https://woj.app/6032.html</a></p>
+</div><hr></div><div class="recent-post-item article-container"><a class="article-title" href="/2020/01/28/prvd项目流程分析/">prvd 项目流程分析</a><time class="post-meta__date"><i class="fa fa-calendar" aria-hidden="true"></i> 2020-01-28</time><span class="article-meta tags"><span class="article-meta__separator">|</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/php/">php</a><span class="article-meta__link">-</span><i class="fa fa-tag article-meta__icon" aria-hidden="true"></i><a class="article-meta__tags" href="/tags/RASP/">RASP</a></span><div class="content"><h2 id="简介"><a href="#简介" class="headerlink" title="简介"></a>简介</h2><p><a href="https://github.com/fate0/prvd" target="_blank" rel="noopener">prvd</a> 是一个 PHP 运行时漏洞检测系统，该项目依赖于 <a href="https://github.com/fate0/xmark" target="_blank" rel="noopener">xmark</a> 扩展，并由 <a href="https://github.com/getsentry/sentry" target="_blank" rel="noopener">sentry</a> 提供客户端界面。prvd 有两种模式——taint 和 payload，payload 模式一直开启，taint模式选择开启。taint 模式在 source 点上打上标记，在 filter 中传递这个标记，在 sink 点检测标记。payload 模式在原始数据末尾加上 payload，不用关心数据传递过程而直接在 sink 点观测。</p>
 <h2 id="安装"><a href="#安装" class="headerlink" title="安装"></a>安装</h2><ol>
 <li><p>git clone 到一个非 web 目录下</p>
 <figure class="highlight crmsh"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">git <span class="keyword">clone</span> <span class="title">https</span>://github.com/fate0/prvd.git</span><br></pre></td></tr></table></figure>
