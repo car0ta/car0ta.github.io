@@ -33,7 +33,7 @@
 <p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/03.png" alt="03"></p>
 <p>而修正后的代码多了 ctype_alnum 函数检查参数 id 是否为字母和数字的组合。 根据 Store.php 文件和添加的 ctype_alnum 函数猜测可能是在存储 session 时触发了相关的文件操作漏洞。 </p>
 <p>在 Store.php 文件中查找 setId 发现在 save 函数中调用了 setId 函数，代码中还存在 write 和 delete 函数涉及到文件的写入和删除。 </p>
-<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/04.png" alt="04"></p>
+<p> <img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/04.png" alt="04"></p>
 <p>我们跟进 write 函数，跳转到 session 接口驱动文件：vendor/topthink/framework/src/think/contract/SessionHandlerInterface.php，查找实现了这个接口的类文件一共有两个 —— Cache 和 File，而 Cache 类文件中的 write 函数无法利用，所以跳转到 File 类文件：vendor/topthink/framework/src/think/session/driver/File.php </p>
 <p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/05.png" alt="05"></p>
 <p>继续跟进 writeFile 函数，File.php 的 170 行：</p>
@@ -57,7 +57,7 @@
 <li>开启 session：</li>
 </ol>
 <p>在 app/middleware.php 文件中删除最后一行注释 </p>
-<p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/12.png" alt="12"> </p>
+<p> <img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/ThinkPHP6%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E6%93%8D%E4%BD%9C%E6%BC%8F%E6%B4%9E%E5%88%86%E6%9E%90/12.png" alt="12"> </p>
 <ol start="2">
 <li>添加设置 session 值的代码：</li>
 </ol>
