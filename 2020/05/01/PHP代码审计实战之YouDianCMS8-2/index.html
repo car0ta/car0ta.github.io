@@ -165,7 +165,7 @@ if (autoChangeMode === '1') {
 <p>跳转到 App/Lib/Action/Member/InfoAction.class.php 下的 index 方法，可以看到参数 ChannelID 直接从 GET 中取得，然后作为 getCount 方法的参数。</p>
 <p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/PHP%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%AE%9E%E6%88%98%E4%B9%8BYouDianCMS8-2/05.png" alt="05"></p>
 <p>跳转到 App/Lib/Model/Admin/InfoModel.class.php 下的 getCount 方法，在该方法中 where 子句进行了拼接，其中包括传进来的 ChannelID，但并未做过滤处理。最后通过链式调用查询数据库。</p>
-<figure class="highlight php"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$n = <span class="keyword">$this</span>-&gt;where($where)-&gt;count();</span><br></pre></td></tr></table></figure>
+<figure class="highlight php"><table><tr><td class="code"><pre><span class="line">$n = <span class="keyword">$this</span>-&gt;where($where)-&gt;count();</span><br></pre></td></tr></table></figure>
 
 <p>跳转到 App/Core/Lib/Core/Model.class.php 下的 __call 方法，这是一个魔术方法，当在类中调用一个无法访问的方法时就会调用此方法，实现方法重载。</p>
 <p><img src="https://raw.githubusercontent.com/car0ta/photo/master/blog/PHP%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1%E5%AE%9E%E6%88%98%E4%B9%8BYouDianCMS8-2/06.png" alt="06"></p>
