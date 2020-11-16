@@ -2,6 +2,13 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://car0ta.github.io/2020/11/15/Dating-with-Scambots-Understanding-the-Ecosystem-of-Fraudulent-Dating-Applications/</loc>
+    
+    <lastmod>2020-11-16</lastmod>
+    
+  </url>
+  
+  <url>
     <loc>https://car0ta.github.io/2020/09/28/Study-diary/</loc>
     
     <lastmod>2020-10-07</lastmod>
@@ -117,6 +124,27 @@
   
   <url>
     <loc>https://car0ta.github.io/tags/upload/</loc>
+    <lastmod>2020-11-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://car0ta.github.io/tags/paper/</loc>
+    <lastmod>2020-11-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://car0ta.github.io/tags/android/</loc>
+    <lastmod>2020-11-16</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://car0ta.github.io/tags/Fraud/</loc>
     <lastmod>2020-11-16</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
