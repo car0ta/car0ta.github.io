@@ -2,14 +2,21 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://car0ta.github.io/2020/09/28/Study-diary/</loc>
+    <loc>https://car0ta.github.io/2020/11/21/Tracking-Ransomware-End-to-end/</loc>
     
-    <lastmod>2020-11-16</lastmod>
+    <lastmod>2020-11-22</lastmod>
     
   </url>
   
   <url>
     <loc>https://car0ta.github.io/2020/11/15/Dating-with-Scambots-Understanding-the-Ecosystem-of-Fraudulent-Dating-Applications/</loc>
+    
+    <lastmod>2020-11-21</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://car0ta.github.io/2020/09/28/Study-diary/</loc>
     
     <lastmod>2020-11-16</lastmod>
     
@@ -95,7 +102,7 @@
 
   <url>
     <loc>https://car0ta.github.io/</loc>
-    <lastmod>2020-11-16</lastmod>
+    <lastmod>2020-11-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
@@ -103,49 +110,56 @@
   
   <url>
     <loc>https://car0ta.github.io/tags/audit/</loc>
-    <lastmod>2020-11-16</lastmod>
+    <lastmod>2020-11-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://car0ta.github.io/tags/PHP/</loc>
-    <lastmod>2020-11-16</lastmod>
+    <lastmod>2020-11-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://car0ta.github.io/tags/serialize/</loc>
-    <lastmod>2020-11-16</lastmod>
+    <lastmod>2020-11-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://car0ta.github.io/tags/upload/</loc>
-    <lastmod>2020-11-16</lastmod>
+    <lastmod>2020-11-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://car0ta.github.io/tags/paper/</loc>
-    <lastmod>2020-11-16</lastmod>
-    <changefreq>daily</changefreq>
-    <priority>0.6</priority>
-  </url>
-  
-  <url>
-    <loc>https://car0ta.github.io/tags/android/</loc>
-    <lastmod>2020-11-16</lastmod>
+    <lastmod>2020-11-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
   
   <url>
     <loc>https://car0ta.github.io/tags/Fraud/</loc>
-    <lastmod>2020-11-16</lastmod>
+    <lastmod>2020-11-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://car0ta.github.io/tags/Android/</loc>
+    <lastmod>2020-11-22</lastmod>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
+    <loc>https://car0ta.github.io/tags/Ransomware/</loc>
+    <lastmod>2020-11-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
   </url>
