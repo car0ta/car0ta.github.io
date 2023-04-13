@@ -1,0 +1,310 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Android PendingIntent 重定向漏洞 | car0ta</title><meta name="keywords" content="Android,Vuls"><meta name="author" content="car0ta"><meta name="copyright" content="car0ta"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="本文来源于 blackhat Europe 2021 中的议题：Re-route Your Intent for Privilege Escalation: An Universal Way to Exploit Android PendingIntents in High-profile and System App，作者是来自 OPPO 子午互联网安全实验室的 En He, Wenbo Che">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android PendingIntent 重定向漏洞">
+<meta property="og:url" content="https://car0ta.github.io/2022/09/17/Android-PendingIntent-%E9%87%8D%E5%AE%9A%E5%90%91%E6%BC%8F%E6%B4%9E/index.html">
+<meta property="og:site_name" content="car0ta">
+<meta property="og:description" content="本文来源于 blackhat Europe 2021 中的议题：Re-route Your Intent for Privilege Escalation: An Universal Way to Exploit Android PendingIntents in High-profile and System App，作者是来自 OPPO 子午互联网安全实验室的 En He, Wenbo Che">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+<meta property="article:published_time" content="2022-09-17T14:51:40.000Z">
+<meta property="article:modified_time" content="2022-09-17T15:22:22.067Z">
+<meta property="article:author" content="car0ta">
+<meta property="article:tag" content="Android">
+<meta property="article:tag" content="Vuls">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://car0ta.github.io/2022/09/17/Android-PendingIntent-%E9%87%8D%E5%AE%9A%E5%90%91%E6%BC%8F%E6%B4%9E/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Android PendingIntent 重定向漏洞',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2022-09-17 23:22:22'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="car0ta" type="application/atom+xml">
+</head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">Loading...</div></div></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">16</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">Tags</div><div class="length-num">3</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">Categories</div><div class="length-num">3</div></a></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">car0ta</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Android PendingIntent 重定向漏洞</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2022-09-17T14:51:40.000Z" title="Created 2022-09-17 22:51:40">2022-09-17</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2022-09-17T15:22:22.067Z" title="Updated 2022-09-17 23:22:22">2022-09-17</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Android-Vuls/">Android Vuls</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">2.7k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>11min</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Android PendingIntent 重定向漏洞"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p>本文来源于 blackhat Europe 2021 中的议题：Re-route Your Intent for Privilege Escalation: An Universal Way to Exploit Android PendingIntents in High-profile and System App，作者是来自 OPPO 子午互联网安全实验室的 En He, Wenbo Chen, Daoyuan Wu。</p>
+<h2 id="背景知识">背景知识</h2>
+<h3 id="Intent">Intent</h3>
+<p>在 Android 系统中，Intent 是在组件间传递的通信消息，用于执行启动活动、发送广播、启动服务等动作；而 Intent 对象内部的字段则规定了 Intent 发送的目的组件，以及执行动作的具体内容，包括 action、category、data、clipdata、package、flag、extra、component 和 selector。</p>
+<p>其中，component 和 selector 用于设置 Intent 的目的组件，规定 Intent 发送给谁。按照是否设置 component 和 selector，Intent 可分为：</p>
+<ul>
+<li>显示 Intent：具有 component 或者 selector 的 Intent</li>
+<li>隐式 Intent：仅设置了 action 的 Intent，注册对应 action 的 Intent-filter 的组件可以接收到 Intent。</li>
+</ul>
+<p>另外还有一种特殊的空 Intent：既没有设置 component 或 selector，也没有设置 action，甚至没有任何字段。</p>
+ <img src="Intent.png" alt="Intent" style="zoom:33%;">
+<p>引申：如果一个 Intent 设置了 component，那么它的 package 字段将被忽略（即使被设置），利用此特点可能绕过某些检查，例如 <a target="_blank" rel="noopener" href="https://android.googlesource.com/platform/packages/apps/Settings/+/abadb382114fa8af5209295c9bae2ca2b08935f3%5E!/#F0">CVE-2022-20223</a>。</p>
+<h3 id="PendingIntent">PendingIntent</h3>
+<p>PendingIntent 可以看做 Intent 的高级版本，实现了一种委托授权发送 Intent 进行组件间通信的机制。</p>
+<p>首先，App 可以使用 getActivity、getBroadcast、getService 等 API 向 Android 系统申请一个 PendingIntent 对象。例如在 getActivity 函数中，intent 参数构成了所生成的 PendingIntent 对象的 base intent，flags 参数决定了 PendingIntent 的行为，例如 FLAG_IMMUTABLE 就用于规定 base Intent 不能被改写。</p>
+ <img src="getActivity.png" alt="getActivity" style="zoom:33%;">
+<p>然后，这个 PendingIntent 对象可以发送给其他 App 使用，其他 App 调用 PendingIntent.send 时，就能够以 PendingIntent 源 App 的身份和权限发送 PendingIntent 中的 base Intent。其他 App 甚至能提供一个新的 Intent，对 base Intent 进行改写。</p>
+ <img src="PendingIntent.png" alt="PendingIntent" style="zoom:33%;">
+<p>因此，App A 将 PendingIntent 交给 App B，意味着将自己的身份与权限连同要执行的操作委托给了 App B，这个操作由 PendingIntent 中的 base Intent 确定。如果恶意 App 有能力获取上述通信过程中的 PendingIntent 并修改其 base Intent，就可能以源 App 的身份和权限发送修改后的 base Intent，从而造成非预期的安全后果。</p>
+<h3 id="历史研究">历史研究</h3>
+<h4 id="BroadcastAnyWhere">BroadcastAnyWhere</h4>
+<p>该漏洞出现在 Settings 添加账户的时候，使用 AccountManager 添加账户的流程如下图：</p>
+ <img src="BroadcastAnyWhere.png" alt="BroadcastAnyWhere" style="zoom:50%;">
+<p>漏洞发生在 step 1，Settings 调用了 AccountManager.addAccount 方法，在传递 addAccountOptions 时加入了一个 PendingIntent，其 Intent 类型为 Broadcast。</p>
+<figure class="highlight java"><table><tbody><tr><td class="code"><pre><span class="line"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title function_">addAccount</span><span class="params">(String accountType)</span> {</span><br><span class="line">     <span class="type">Bundle</span> <span class="variable">addAccountOptions</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Bundle</span>();</span><br><span class="line">     mPendingIntent = PendingIntent.getBroadcast(<span class="built_in">this</span>, <span class="number">0</span>, <span class="keyword">new</span> <span class="title class_">Intent</span>(), <span class="number">0</span>);</span><br><span class="line">     addAccountOptions.putParcelable(KEY_CALLER_IDENTITY, mPendingIntent);</span><br><span class="line">     addAccountOptions.putBoolean(EXTRA_HAS_MULTIPLE_USERS, Utils.hasMultipleUsers(<span class="built_in">this</span>));</span><br><span class="line">     AccountManager.get(<span class="built_in">this</span>).addAccount(</span><br></pre></td></tr></tbody></table></figure>
+<p>由于这个广播 PendingIntent 由 system_server AccountManagerService(uid 1000) 所创建，代表了系统的身份和权限，且并未设置 base Intent 的其他字段。普通 Authenticator App 拿到以后，改写其 base Intent，例如设置一个 action android.intent.action.BOOT_COMPLETED，最后调用 PendingIntent.send 以 uid 1000 的身份发送特权广播。</p>
+<figure class="highlight java"><table><tbody><tr><td class="code"><pre><span class="line"><span class="type">PendingIntent</span> <span class="variable">pending_intent</span> <span class="operator">=</span> (PendingIntent)options.get(<span class="string">"pendingIntent"</span>);</span><br><span class="line">intent.setAction(<span class="string">"android.intent.action.BOOT_COMPLETED"</span>);</span><br><span class="line"> </span><br><span class="line"><span class="keyword">try</span> {</span><br><span class="line">         pending_intent.send(getGlobalApplicationContext(),<span class="number">0</span>,intent,<span class="literal">null</span>,<span class="literal">null</span>,<span class="literal">null</span>);</span><br><span class="line">} <span class="keyword">catch</span> (CanceledException e) {</span><br><span class="line">         e.printStackTrace();</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<h4 id="LINE-App">LINE App</h4>
+<p>另一个案例出现在即时通信软件 LINE App 启动服务时泄露了一个 PendingIntent 对象，且 base Intent 为空 Intent。因此恶意APP可以注册一个 Intent-filter 为jp.naver.android.npush.intent.action.SUBSCRIBE 的服务，然后获取上面的 PendingIntent，最后以 LINE App 的身份发送广播，造成伪造 LINE App 推送消息的危害。</p>
+ <img src="LINE_App.png" alt="LINE_App" style="zoom:50%;">
+<h3 id="PendingIntent-的使用场景">PendingIntent 的使用场景</h3>
+<p>在 Android 系统中，PendingIntent 还广泛存在于 SliceProviders、Notifications、MediaBrowserService、AppWidgets、AlarmManager 等服务当中。因此现在的问题是如何获取 Android 系统中广泛使用的 PendingIntent 并进行利用。</p>
+<h2 id="不安全-PendingIntent-的通用利用方法">不安全 PendingIntent 的通用利用方法</h2>
+<h3 id="不安全-PendingIntent-的特征">不安全 PendingIntent 的特征</h3>
+<p>从前面的历史研究中我们知道 empty base Intent 构建的 PendingIntent 是不安全的，那 Implicit base Intent 构建的 PendingIntent 是否安全呢？下文将深入探索这种形式的 PendingIntent 的安全问题及利用方式。</p>
+<figure class="highlight java"><table><tbody><tr><td class="code"><pre><span class="line"><span class="comment">// empty base Intent</span></span><br><span class="line">mPendingIntent = PendingIntent.getBroadcast(<span class="built_in">this</span>, <span class="number">0</span>, <span class="keyword">new</span> <span class="title class_">Intent</span>(), <span class="number">0</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// implicit base Intent</span></span><br><span class="line">mPendingIntent = PendingIntent.getActivity(<span class="built_in">this</span>, <span class="number">0</span>, <span class="keyword">new</span> <span class="title class_">Intent</span>(<span class="string">"some.Action"</span>), <span class="number">0</span>);</span><br></pre></td></tr></tbody></table></figure>
+<h3 id="深入-Intent-fillIn-改写机制">深入 Intent fillIn 改写机制</h3>
+<p>在寻找利用之前先要深入探索 Intent fillIn 改写机制，这决定了其他 App 获得 PendingIntent 后如何对 base Intent 进行改写。这个机制由 Intent.fillIn 方法提供：</p>
+<figure class="highlight java"><table><tbody><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="type">int</span> <span class="title function_">fillIn</span><span class="params">(<span class="meta">@NonNull</span> Intent other, <span class="meta">@FillInFlags</span> <span class="type">int</span> flags)</span> {</span><br><span class="line">    <span class="type">int</span> <span class="variable">changes</span> <span class="operator">=</span> <span class="number">0</span>;</span><br><span class="line">    <span class="type">boolean</span> <span class="variable">mayHaveCopiedUris</span> <span class="operator">=</span> <span class="literal">false</span>;</span><br><span class="line">    <span class="keyword">if</span> (other.mAction != <span class="literal">null</span></span><br><span class="line">            &amp;&amp; (mAction == <span class="literal">null</span> || (flags&amp;FILL_IN_ACTION) != <span class="number">0</span>)) {</span><br><span class="line">        mAction = other.mAction;</span><br><span class="line">        changes |= FILL_IN_ACTION;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> ((other.mData != <span class="literal">null</span> || other.mType != <span class="literal">null</span>)</span><br><span class="line">            &amp;&amp; ((mData == <span class="literal">null</span> &amp;&amp; mType == <span class="literal">null</span>)</span><br><span class="line">                    || (flags&amp;FILL_IN_DATA) != <span class="number">0</span>)) {</span><br><span class="line">        mData = other.mData;</span><br><span class="line">        mType = other.mType;</span><br><span class="line">        changes |= FILL_IN_DATA;</span><br><span class="line">        mayHaveCopiedUris = <span class="literal">true</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (other.mIdentifier != <span class="literal">null</span></span><br><span class="line">            &amp;&amp; (mIdentifier == <span class="literal">null</span> || (flags&amp;FILL_IN_IDENTIFIER) != <span class="number">0</span>)) {</span><br><span class="line">        mIdentifier = other.mIdentifier;</span><br><span class="line">        changes |= FILL_IN_IDENTIFIER;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (other.mCategories != <span class="literal">null</span></span><br><span class="line">            &amp;&amp; (mCategories == <span class="literal">null</span> || (flags&amp;FILL_IN_CATEGORIES) != <span class="number">0</span>)) {</span><br><span class="line">        <span class="keyword">if</span> (other.mCategories != <span class="literal">null</span>) {</span><br><span class="line">            mCategories = <span class="keyword">new</span> <span class="title class_">ArraySet</span>&lt;String&gt;(other.mCategories);</span><br><span class="line">        }</span><br><span class="line">        changes |= FILL_IN_CATEGORIES;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (other.mPackage != <span class="literal">null</span></span><br><span class="line">            &amp;&amp; (mPackage == <span class="literal">null</span> || (flags&amp;FILL_IN_PACKAGE) != <span class="number">0</span>)) {</span><br><span class="line">        <span class="comment">// Only do this if mSelector is not set.</span></span><br><span class="line">        <span class="keyword">if</span> (mSelector == <span class="literal">null</span>) {</span><br><span class="line">            mPackage = other.mPackage;</span><br><span class="line">            changes |= FILL_IN_PACKAGE;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// Selector is special: it can only be set if explicitly allowed,</span></span><br><span class="line">    <span class="comment">// for the same reason as the component name.</span></span><br><span class="line">    <span class="keyword">if</span> (other.mSelector != <span class="literal">null</span> &amp;&amp; (flags&amp;FILL_IN_SELECTOR) != <span class="number">0</span>) {</span><br><span class="line">        <span class="keyword">if</span> (mPackage == <span class="literal">null</span>) {</span><br><span class="line">            mSelector = <span class="keyword">new</span> <span class="title class_">Intent</span>(other.mSelector);</span><br><span class="line">            mPackage = <span class="literal">null</span>;</span><br><span class="line">            changes |= FILL_IN_SELECTOR;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (other.mClipData != <span class="literal">null</span></span><br><span class="line">            &amp;&amp; (mClipData == <span class="literal">null</span> || (flags&amp;FILL_IN_CLIP_DATA) != <span class="number">0</span>)) {</span><br><span class="line">        mClipData = other.mClipData;</span><br><span class="line">        changes |= FILL_IN_CLIP_DATA;</span><br><span class="line">        mayHaveCopiedUris = <span class="literal">true</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// Component is special: it can -only- be set if explicitly allowed,</span></span><br><span class="line">    <span class="comment">// since otherwise the sender could force the intent somewhere the</span></span><br><span class="line">    <span class="comment">// originator didn't intend.</span></span><br><span class="line">    <span class="keyword">if</span> (other.mComponent != <span class="literal">null</span> &amp;&amp; (flags&amp;FILL_IN_COMPONENT) != <span class="number">0</span>) {</span><br><span class="line">        mComponent = other.mComponent;</span><br><span class="line">        changes |= FILL_IN_COMPONENT;</span><br><span class="line">    }</span><br><span class="line">    mFlags |= other.mFlags;</span><br><span class="line">    <span class="keyword">if</span> (other.mSourceBounds != <span class="literal">null</span></span><br><span class="line">            &amp;&amp; (mSourceBounds == <span class="literal">null</span> || (flags&amp;FILL_IN_SOURCE_BOUNDS) != <span class="number">0</span>)) {</span><br><span class="line">        mSourceBounds = <span class="keyword">new</span> <span class="title class_">Rect</span>(other.mSourceBounds);</span><br><span class="line">        changes |= FILL_IN_SOURCE_BOUNDS;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (mExtras == <span class="literal">null</span>) {</span><br><span class="line">        <span class="keyword">if</span> (other.mExtras != <span class="literal">null</span>) {</span><br><span class="line">            mExtras = <span class="keyword">new</span> <span class="title class_">Bundle</span>(other.mExtras);</span><br><span class="line">            mayHaveCopiedUris = <span class="literal">true</span>;</span><br><span class="line">        }</span><br><span class="line">    } <span class="keyword">else</span> <span class="keyword">if</span> (other.mExtras != <span class="literal">null</span>) {</span><br><span class="line">        <span class="keyword">try</span> {</span><br><span class="line">            <span class="type">Bundle</span> <span class="variable">newb</span> <span class="operator">=</span> <span class="keyword">new</span> <span class="title class_">Bundle</span>(other.mExtras);</span><br><span class="line">            newb.putAll(mExtras);</span><br><span class="line">            mExtras = newb;</span><br><span class="line">            mayHaveCopiedUris = <span class="literal">true</span>;</span><br><span class="line">        } <span class="keyword">catch</span> (RuntimeException e) {</span><br><span class="line">            <span class="comment">// Modifying the extras can cause us to unparcel the contents</span></span><br><span class="line">            <span class="comment">// of the bundle, and if we do this in the system process that</span></span><br><span class="line">            <span class="comment">// may fail.  We really should handle this (i.e., the Bundle</span></span><br><span class="line">            <span class="comment">// impl shouldn't be on top of a plain map), but for now just</span></span><br><span class="line">            <span class="comment">// ignore it and keep the original contents. :(</span></span><br><span class="line">            Log.w(TAG, <span class="string">"Failure filling in extras"</span>, e);</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (mayHaveCopiedUris &amp;&amp; mContentUserHint == UserHandle.USER_CURRENT</span><br><span class="line">            &amp;&amp; other.mContentUserHint != UserHandle.USER_CURRENT) {</span><br><span class="line">        mContentUserHint = other.mContentUserHint;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> changes;</span><br><span class="line">}</span><br><span class="line"></span><br></pre></td></tr></tbody></table></figure>
+<p>上述代码中，this 指向当前 Intent，other 为其他 Intent，如果当前 Intent 中的成员变量为空则可以被 other 中相应的成员变量覆盖。特别的是 Intent 中的 component 和 selector 成员变量，即使当前 Intent 中的 component 和 selector 为空，也不能被 other 改写，除非 PendingIntent 设置了 FILL_IN_COMPONENT 或 FILL_IN_SELECTOR 标志。</p>
+<h3 id="PendingIntent-重定向攻击">PendingIntent 重定向攻击</h3>
+<p>了解了 Intent fillIn 机制后可以知道，在获取 PendingIntent 对象之后，其 base Intent 的 action、category、data、clidpdata、package、flag、extra 等成员都是可以改写的，而 component 和 selector 不能改写。而对于 Implicit base Intent，因为 action 已经被设置了，所以也无法改写。因此攻击者不能像前面 BroadcastAnyWhere 漏洞一样，通过劫持 PendingIntent 并在 base Intent 中设置 action，隐式打开一个受保护的组件。</p>
+<p>因为 package 字段可以指定，同时联想到 Intent 重定向漏洞的利用方法，我们可以通过设置 Intent 中的 flag 来巧妙解决。Intent 提供了有关临时授权的标志：</p>
+<ul>
+<li>FLAG_GRANT_READ_URI_PERMISSION：Intent 携带此标志时，Intent 的接收者将 Intent 所携带 data URI 以及 clipdata URI 中的读权限；F</li>
+<li>LAG_GRANT_WRITE_URI_PERMISSION：Intent 携带此标志时，Intent 的接收者将 Intent 所携带 data URI 以及 clipdata URI 中的写权限。</li>
+</ul>
+<p>简言之，恶意 App 对 PendingIntent 进行了指向恶意 App 自己的重定向，通过对 PendingIntent base Intent 的部分修改（修改package、flag 和 data/clipdata），使其以受害 App 的权限打开恶意 App 自身，这样恶意 App 在被打开的瞬间就获得了对受害 App 私有数据的 读写权限。具体利用方式如下图所示：</p>
+ <img src="Hijack_PendingIntent.png" alt="Hijack_PendingIntent" style="zoom:50%;">
+<ol>
+<li>受害 App 通过 getActivity 构建 PendingIntent（假定使用的是 Implicit base Intent），在 Notifications、SliceProviders、AppWidgets 等服务中使用，攻击 App 通过 Bind/Connect/Listen 方法与相关服务建立连接；</li>
+<li>攻击 App 通过前面探讨的各种渠道获取受害 App 的 PendingIntent；</li>
+<li>攻击 App 修改 PendingIntent 中的 base Intent，由于是 Implicit Intent，因此 action、component、selector 都不能被修改，但可以作如下修改：
+<ul>
+<li>修改 data/clipdata，使其 URI 指向受害 App 的私有ContentProvider</li>
+<li>修改 package，指向攻击 App</li>
+<li>添加 FLAG_GRANT_READ_URI_PERMISSION 和 FLAG_GRANT_WRITE_URI_PERMISSION 标志</li>
+</ul>
+</li>
+<li>攻击者调用 PendingIntent.send；</li>
+<li>由于这个 PendingIntent 代表了受害 App 的身份和权限，因此将以受害 App 的名义发Intent，打开攻击 App 的 Activity；</li>
+<li>在攻击 App 的 Activity 被打开的瞬间，即被授权访问 base Intent 中携带的 URI，也就获得了对受害 App 私有 ContentProvider 的读写权限。</li>
+</ol>
+<p>上面受害 App 的私有 ContentProvider 需要携带属性 grantUriPermission=true，不限于受害 App 自己的 ContentProvider，也包括受害 App 有权限访问的 ContentProvider。手机上一个常见的具有 grantUriPermission=true 属性的 ContentProvider 就是代表通讯录的 ContentProvider，只要受害 App 具有 READ_CONTACTS 权限，出现这样一个 PendingIntent 漏洞猴将导致通讯录泄露。</p>
+<p>由于这里使用了 grantUri 技巧，因此并不适用于 Broadcast PendingIntent，因为广播接收器是不可以被 grantUri 的。另外，从 Android 5.0 之后，Service 不能被隐式启动，因此也很难看到 Implicit base Intent 的 service PendingIntent，所以这里的 PendingIntent 重定向攻击主要适用于 Activity。</p>
+<h2 id="Android-系统中的真实案例">Android 系统中的真实案例</h2>
+<table>
+<thead>
+<tr>
+<th>ID</th>
+<th>Found in</th>
+<th>Impact</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>CVE-2020-0188</td>
+<td>AOSP Settings SliceProvider</td>
+<td>Theft of Some Settings Provider</td>
+</tr>
+<tr>
+<td>CVE-2020-0389</td>
+<td>AOSP SystemUI Notification</td>
+<td>Theft of Contacts Provider or Arbitrary Code Execution</td>
+</tr>
+<tr>
+<td>A-166126300</td>
+<td>AOSP Bluetooth MediaBrowserService</td>
+<td>Theft of Contacts Provider</td>
+</tr>
+<tr>
+<td>-</td>
+<td>Some super popular app’s AppWidgets</td>
+<td>Theft of Contacs Provider or Arbitrary Code Execution</td>
+</tr>
+<tr>
+<td>CVE-2020-0294</td>
+<td>AOSP System Services</td>
+<td>Theft of Settings Provide</td>
+</tr>
+</tbody>
+</table>
+<p>基于对 PendingIntent 特征的掌握，作者编写了一个自动化扫描工具 <a target="_blank" rel="noopener" href="https://github.com/h0rd7/PendingIntentScan">PendingIntentScan</a>，该工具基于 Soot 这一 Java 静态分析框架对 APK 进行静态数据流分析。</p>
+<h3 id="CVE-2020-0188-SliceProvider">CVE-2020-0188: SliceProvider</h3>
+<h3 id="CVE-2020-0389-Notification">CVE-2020-0389: Notification</h3>
+<h3 id="CVE-2020-0294-System-Service">CVE-2020-0294: System Service</h3>
+<h2 id="Android-12-安全变更">Android 12 安全变更</h2>
+<p>针对以上漏洞的修复，Google Android 安全团队大部分使用了 PendingIntent.FLAG_IMMUTABLE，小部分的修复将 base Intent 设置为 Explicit Intent。在 Android 12 大版本中，Google Android 安全团队对 PendingIntent 的行为进行了重大安全变更，引入了一个新的 flag：PendingIntent.FLAG_MUTABLE，表示 base Intent 可以改写，这与原有的 PendingIntent.FLAG_IMMUTABLE 共同描述 PendingIntent 的可变性。</p>
+<p>对于 Target S+ 的 App，Android 系统要求开发者必须明确指定 PendingIntent 的可变性，FLAG_MUTABLE 和 FLAG_IMMUTABLE 必须使用其一，否则抛出异常。这就要求开发者对 PendingIntent 的使用有清晰的理解，知道 PendingIntent 是否会在将来被改写。Google 也对开发者提出了详细的安全编码建议：</p>
+<ul>
+<li>尽可能使用 FLAG_IMMUTABLE 来生成不可改写的 PendingIntent；</li>
+<li>如果使用 FLAG_MUTABLE 来生成可改写的 PendingIntent，base Intent 一定要使用 Explicit Intent，明确指定 Intent 的组件。</li>
+</ul>
+<h2 id="参考">参考</h2>
+<p>PendingIntent重定向：一种针对安卓系统和流行App的通用提权方法——BlackHat EU 2021议题详解</p>
+<p><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000041532963">https://segmentfault.com/a/1190000041532963</a></p>
+<p><a target="_blank" rel="noopener" href="https://segmentfault.com/a/1190000041550819">https://segmentfault.com/a/1190000041550819</a></p>
+<p><a target="_blank" rel="noopener" href="https://www.blackhat.com/eu-21/briefings/schedule/index.html#re-route-your-intent-for-privilege-escalation-a-universal-way-to-exploit-android-pendingintents-in-high-profile-and-system-apps-24340">https://www.blackhat.com/eu-21/briefings/schedule/index.html#re-route-your-intent-for-privilege-escalation-a-universal-way-to-exploit-android-pendingintents-in-high-profile-and-system-apps-24340</a></p>
+<p>broadAnywhere：Broadcast组件权限绕过漏洞（Bug: 17356824）</p>
+<p><a target="_blank" rel="noopener" href="http://retme.net/index.php/2014/11/14/broadAnywhere-bug-17356824.htmlAndroid">http://retme.net/index.php/2014/11/14/broadAnywhere-bug-17356824.htmlAndroid</a></p>
+<p>App 安全之 Intent 重定向详解</p>
+<p><a target="_blank" rel="noopener" href="https://www.freebuf.com/articles/endpoint/271629.html">https://www.freebuf.com/articles/endpoint/271629.html</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">car0ta</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://car0ta.github.io/2022/09/17/Android-PendingIntent-%E9%87%8D%E5%AE%9A%E5%90%91%E6%BC%8F%E6%B4%9E/">https://car0ta.github.io/2022/09/17/Android-PendingIntent-%E9%87%8D%E5%AE%9A%E5%90%91%E6%BC%8F%E6%B4%9E/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Android/">Android</a><a class="post-meta__tags" href="/tags/Vuls/">Vuls</a></div><div class="post_share"><div class="social-share" data-image="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86"><span class="toc-text">背景知识</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Intent"><span class="toc-text">Intent</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PendingIntent"><span class="toc-text">PendingIntent</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8E%86%E5%8F%B2%E7%A0%94%E7%A9%B6"><span class="toc-text">历史研究</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#BroadcastAnyWhere"><span class="toc-text">BroadcastAnyWhere</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#LINE-App"><span class="toc-text">LINE App</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PendingIntent-%E7%9A%84%E4%BD%BF%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-text">PendingIntent 的使用场景</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%8D%E5%AE%89%E5%85%A8-PendingIntent-%E7%9A%84%E9%80%9A%E7%94%A8%E5%88%A9%E7%94%A8%E6%96%B9%E6%B3%95"><span class="toc-text">不安全 PendingIntent 的通用利用方法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E4%B8%8D%E5%AE%89%E5%85%A8-PendingIntent-%E7%9A%84%E7%89%B9%E5%BE%81"><span class="toc-text">不安全 PendingIntent 的特征</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%B7%B1%E5%85%A5-Intent-fillIn-%E6%94%B9%E5%86%99%E6%9C%BA%E5%88%B6"><span class="toc-text">深入 Intent fillIn 改写机制</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#PendingIntent-%E9%87%8D%E5%AE%9A%E5%90%91%E6%94%BB%E5%87%BB"><span class="toc-text">PendingIntent 重定向攻击</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Android-%E7%B3%BB%E7%BB%9F%E4%B8%AD%E7%9A%84%E7%9C%9F%E5%AE%9E%E6%A1%88%E4%BE%8B"><span class="toc-text">Android 系统中的真实案例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#CVE-2020-0188-SliceProvider"><span class="toc-text">CVE-2020-0188: SliceProvider</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CVE-2020-0389-Notification"><span class="toc-text">CVE-2020-0389: Notification</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#CVE-2020-0294-System-Service"><span class="toc-text">CVE-2020-0294: System Service</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Android-12-%E5%AE%89%E5%85%A8%E5%8F%98%E6%9B%B4"><span class="toc-text">Android 12 安全变更</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83"><span class="toc-text">参考</span></a></li></ol></div></div></div></div></main><footer id="footer" style="background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2023 By car0ta</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css"><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/copy-tex.min.js"></script><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/copy-tex.css"><script>(() => {
+  document.querySelectorAll('#article-container span.katex-display').forEach(item => {
+    btf.wrap(item, 'div', { class: 'katex-wrap'})
+  })
+})()</script><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="fluttering_ribbon" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-fluttering-ribbon.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

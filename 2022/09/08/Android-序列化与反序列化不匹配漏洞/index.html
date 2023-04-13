@@ -1,0 +1,296 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Android 序列化与反序列化不匹配漏洞 | car0ta</title><meta name="keywords" content="Android,Vuls"><meta name="author" content="car0ta"><meta name="copyright" content="car0ta"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="历史漏洞整理    CVE 编号 Parcelable 对象 公布时间     CVE-2017-0806 GateKeeperResponse 2017.10   CVE-2017-13286 OutputConfiguration 2018.04   CVE-2017-13287 VerifyCredentialResponse 2018.04   CVE-2017-13288 Periodi">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Android 序列化与反序列化不匹配漏洞">
+<meta property="og:url" content="https://car0ta.github.io/2022/09/08/Android-%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8E%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8D%E5%8C%B9%E9%85%8D%E6%BC%8F%E6%B4%9E/index.html">
+<meta property="og:site_name" content="car0ta">
+<meta property="og:description" content="历史漏洞整理    CVE 编号 Parcelable 对象 公布时间     CVE-2017-0806 GateKeeperResponse 2017.10   CVE-2017-13286 OutputConfiguration 2018.04   CVE-2017-13287 VerifyCredentialResponse 2018.04   CVE-2017-13288 Periodi">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+<meta property="article:published_time" content="2022-09-08T10:59:20.000Z">
+<meta property="article:modified_time" content="2022-09-08T11:14:37.164Z">
+<meta property="article:author" content="car0ta">
+<meta property="article:tag" content="Android">
+<meta property="article:tag" content="Vuls">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://car0ta.github.io/2022/09/08/Android-%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8E%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8D%E5%8C%B9%E9%85%8D%E6%BC%8F%E6%B4%9E/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Android 序列化与反序列化不匹配漏洞',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2022-09-08 19:14:37'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="car0ta" type="application/atom+xml">
+</head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">Loading...</div></div></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">16</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">Tags</div><div class="length-num">3</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">Categories</div><div class="length-num">3</div></a></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">car0ta</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Android 序列化与反序列化不匹配漏洞</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2022-09-08T10:59:20.000Z" title="Created 2022-09-08 18:59:20">2022-09-08</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2022-09-08T11:14:37.164Z" title="Updated 2022-09-08 19:14:37">2022-09-08</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Android-Vuls/">Android Vuls</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">2.3k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>9min</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Android 序列化与反序列化不匹配漏洞"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><p>历史漏洞整理</p>
+<table>
+<thead>
+<tr>
+<th style="text-align:left">CVE 编号</th>
+<th style="text-align:left">Parcelable 对象</th>
+<th style="text-align:left">公布时间</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align:left"><a target="_blank" rel="noopener" href="https://android.googlesource.com/platform/frameworks/base/+/b87c968e5a41a1a09166199bf54eee12608f3900">CVE-2017-0806</a></td>
+<td style="text-align:left">GateKeeperResponse</td>
+<td style="text-align:left">2017.10</td>
+</tr>
+<tr>
+<td style="text-align:left"><a target="_blank" rel="noopener" href="https://android.googlesource.com/platform/frameworks/base/+/47ebfaa2196aaf4fbeeec34f1a1c5be415cf041b%5E%21/#F0">CVE-2017-13286</a></td>
+<td style="text-align:left">OutputConfiguration</td>
+<td style="text-align:left">2018.04</td>
+</tr>
+<tr>
+<td style="text-align:left"><a target="_blank" rel="noopener" href="https://android.googlesource.com/platform/frameworks/base/+/09ba8fdffd9c8d74fdc6bfb51bcebc27fc43884a">CVE-2017-13287</a></td>
+<td style="text-align:left">VerifyCredentialResponse</td>
+<td style="text-align:left">2018.04</td>
+</tr>
+<tr>
+<td style="text-align:left"><a target="_blank" rel="noopener" href="https://android.googlesource.com/platform/frameworks/base/+/b796cd32a45bcc0763c50cc1a0cc8236153dcea3">CVE-2017-13288</a></td>
+<td style="text-align:left">PeriodicAdvertisingReport</td>
+<td style="text-align:left">2018.04</td>
+</tr>
+<tr>
+<td style="text-align:left"><a target="_blank" rel="noopener" href="https://android.googlesource.com/platform/frameworks/base/+/5a3d2708cd2289a4882927c0e2cb0d3c21a99c02">CVE-2017-13289</a></td>
+<td style="text-align:left">ParcelableRttResults</td>
+<td style="text-align:left">2018.04</td>
+</tr>
+<tr>
+<td style="text-align:left"><a target="_blank" rel="noopener" href="https://android.googlesource.com/platform/frameworks/base/+/35bb911d4493ea94d4896cc42690cab0d4dbb78f">CVE-2017-13315</a></td>
+<td style="text-align:left">DcParamObject</td>
+<td style="text-align:left">2018.05</td>
+</tr>
+<tr>
+<td style="text-align:left"><a target="_blank" rel="noopener" href="https://android.googlesource.com/platform/frameworks/base/+/7bf30cb92ab213c07241ad22def6816ae201dbab%5E%21/#F0">CVE-2021-0928</a></td>
+<td style="text-align:left">OutputConfiguration, SessionConfiguration, VendorTagDescriptor, VendorTagDescriptorCache</td>
+<td style="text-align:left">2021.11</td>
+</tr>
+<tr>
+<td style="text-align:left"><a target="_blank" rel="noopener" href="https://wrlus.com/android-security/cve-2021-39676/">CVE-2021-39676</a></td>
+<td style="text-align:left">AndroidFuture</td>
+<td style="text-align:left">2022.02</td>
+</tr>
+</tbody>
+</table>
+<h2 id="背景知识-2">背景知识</h2>
+<h3 id="Android-Parcelable-序列化">Android Parcelable 序列化</h3>
+<p>简单来说，序列化就是将对象转换为可以传输或存储的二进制流（二进制序列）的过程，反序列化则是从二进制流（二进制序列）转化为对象的过程。</p>
+ <img src="Parcelable.png" alt="Parcelable" style="zoom:50%;">
+<p>在 Android 中序列化有两种方式：Serializable 和 Parcelable。其中 Serializable 接口是 JavaSE 本省就支持的，实现简单但效率较低，只需要 implements Serializable 即可；而 Parcelable 接口是 Android 中特有的，实现较为复杂但效率更高，需要重写 Parcelable 中的四个方法（describeContents, writeToParcel, createFromParcel, newArray），可用于 Intent 数据传递和进程间通信（IPC）。</p>
+<p>下面代码是一个典型的 Parcelable 序列化使用样例，其中重写的 writeToParcel 和 createFromParcel 方法对应序列化（写）和反序列化（读）操作，具体则是调用了 Parcel 类中一系列对称的 write 和 read 方法。</p>
+<figure class="highlight java"><table><tbody><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">MyParcelable</span> <span class="keyword">implements</span> <span class="title class_">Parcelable</span> {</span><br><span class="line">    <span class="keyword">private</span> String paramsA;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">int</span> paramsB;</span><br><span class="line">    <span class="keyword">private</span> <span class="type">boolean</span> paramsC;</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">MyParcelable</span><span class="params">()</span> {</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">public</span> <span class="title function_">MyParcelable</span><span class="params">(String paramsA, <span class="type">int</span> paramsB, <span class="type">boolean</span> paramsC)</span> {</span><br><span class="line">        <span class="built_in">this</span>.paramsA = paramsA;</span><br><span class="line">        <span class="built_in">this</span>.paramsB = paramsB;</span><br><span class="line">        <span class="built_in">this</span>.paramsC = paramsC;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">public</span> String <span class="title function_">getParamsA</span><span class="params">()</span> {</span><br><span class="line">        <span class="keyword">return</span> paramsA;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setParamsA</span><span class="params">(String paramsA)</span> {</span><br><span class="line">        <span class="built_in">this</span>.paramsA = paramsA;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">getParamsB</span><span class="params">()</span> {</span><br><span class="line">        <span class="keyword">return</span> paramsB;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setParamsB</span><span class="params">(<span class="type">int</span> paramsB)</span> {</span><br><span class="line">        <span class="built_in">this</span>.paramsB = paramsB;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">public</span> <span class="type">boolean</span> <span class="title function_">isParamsC</span><span class="params">()</span> {</span><br><span class="line">        <span class="keyword">return</span> paramsC;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">setParamsC</span><span class="params">(<span class="type">boolean</span> paramsC)</span> {</span><br><span class="line">        <span class="built_in">this</span>.paramsC = paramsC;</span><br><span class="line">    }</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="type">int</span> <span class="title function_">describeContents</span><span class="params">()</span> {</span><br><span class="line">        <span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">writeToParcel</span><span class="params">(Parcel dest, <span class="type">int</span> flags)</span> {</span><br><span class="line">        dest.writeString(<span class="built_in">this</span>.paramsA);</span><br><span class="line">        dest.writeInt(<span class="built_in">this</span>.paramsB);</span><br><span class="line">        dest.writeByte(<span class="built_in">this</span>.paramsC ? (<span class="type">byte</span>) <span class="number">1</span> : (<span class="type">byte</span>) <span class="number">0</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">protected</span> <span class="title function_">MyParcelable</span><span class="params">(Parcel in)</span> {</span><br><span class="line">        <span class="built_in">this</span>.paramsA = in.readString();</span><br><span class="line">        <span class="built_in">this</span>.paramsB = in.readInt();</span><br><span class="line">        <span class="built_in">this</span>.paramsC = in.readByte() != <span class="number">0</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> Creator&lt;MyParcelable&gt; CREATOR = <span class="keyword">new</span> <span class="title class_">Creator</span>&lt;MyParcelable&gt;() {</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> MyParcelable <span class="title function_">createFromParcel</span><span class="params">(Parcel source)</span> {</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">MyParcelable</span>(source);</span><br><span class="line">        }</span><br><span class="line">        <span class="meta">@Override</span></span><br><span class="line">        <span class="keyword">public</span> MyParcelable[] newArray(<span class="type">int</span> size) {</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">MyParcelable</span>[size];</span><br><span class="line">        }</span><br><span class="line">    };</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>进一步了解 <a target="_blank" rel="noopener" href="https://developer.android.com/reference/android/os/Parcel">Parcel</a>。Parcel 翻译是打包的意思，也就是包装我们需要传输的数据，然后在 Binder 中传输（跨进程数据传输），简单来说它是一个用于 IBinder 发送消息的容器。Parcel 提供了一套机制，可以将序列化之后的数据写入到一个共享内存中，其他进程通过 Parcel 从共享内存中读取字节流并反序列化成对象。一个 Parcel 容器可以包含原始数据类型及其数组类型，也可以包含 Parcelable 对象，还可以包含指向 IBinder 对象的引用。</p>
+ <img src="Parcel.png" alt="Parcel" style="zoom:50%;">
+<h3 id="Android-Bundle">Android Bundle</h3>
+<p>可序列化的 Parcelable 对象一般不单独进行序列化传输，需要通过 Bundle 对象携带。<a target="_blank" rel="noopener" href="https://developer.android.com/reference/android/os/Bundle">Bundle</a> 的内部实现实际上是 ArrayMap，以 key-value 的形式存储数据。key 为 string 类型，value 可以是 string、int、boolean、byte、float、long、double 等基本类型或它们对应的数组，也可以是对象或对象数组。当 bundle 传递的是对象或对象数组时，必须实现 Serialiable 或 Parcelable 接口。</p>
+<p>Android 中组件间通信（ICC）频繁使用到的是 <a target="_blank" rel="noopener" href="https://developer.android.com/reference/android/content/Intent">Intent</a>，在 Intent 源码中有一个 mExtras 字段，它就是一个 Bundle 容器，可用于数据传递。当我们调用 Intent.putExtra(String key, XXX value) 方法向 Intent 中写入数据时，实际上调用的是 Bundle.putXXX(String key, XXX value) 方法向 Intent.mExtras 这个 Bundle 容器中写入数据。</p>
+<p>Bundle 序列化过程如下：依次写入 Bundle 携带数据的长度、Bundle 魔数（0x4C444E42）和所有的键值对（writeArrayMapInternal）。</p>
+<p>frameworks/base/core/java/android/os/BaseBundle.java</p>
+<figure class="highlight java"><table><tbody><tr><td class="code"><pre><span class="line"><span class="keyword">void</span> <span class="title function_">writeToParcelInner</span><span class="params">(Parcel parcel, <span class="type">int</span> flags)</span> {</span><br><span class="line">    <span class="comment">// If the parcel has a read-write helper, we can't just copy the blob, so unparcel it first.</span></span><br><span class="line">    <span class="keyword">if</span> (parcel.hasReadWriteHelper()) {</span><br><span class="line">        unparcel();</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// Keep implementation in sync with writeToParcel() in</span></span><br><span class="line">    <span class="comment">// frameworks/native/libs/binder/PersistableBundle.cpp.</span></span><br><span class="line">    <span class="keyword">final</span> ArrayMap&lt;String, Object&gt; map;</span><br><span class="line">    <span class="keyword">synchronized</span> (<span class="built_in">this</span>) {</span><br><span class="line">        <span class="comment">// unparcel() can race with this method and cause the parcel to recycle</span></span><br><span class="line">        <span class="comment">// at the wrong time. So synchronize access the mParcelledData's content.</span></span><br><span class="line">        <span class="keyword">if</span> (mParcelledData != <span class="literal">null</span>) {</span><br><span class="line">            <span class="keyword">if</span> (mParcelledData == NoImagePreloadHolder.EMPTY_PARCEL) {</span><br><span class="line">                parcel.writeInt(<span class="number">0</span>);</span><br><span class="line">            } <span class="keyword">else</span> {</span><br><span class="line">                <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> mParcelledData.dataSize();</span><br><span class="line">                parcel.writeInt(length);</span><br><span class="line">                parcel.writeInt(mParcelledByNative ? BUNDLE_MAGIC_NATIVE : BUNDLE_MAGIC);</span><br><span class="line">                parcel.appendFrom(mParcelledData, <span class="number">0</span>, length);</span><br><span class="line">            }</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        }</span><br><span class="line">        map = mMap;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Special case for empty bundles.</span></span><br><span class="line">    <span class="keyword">if</span> (map == <span class="literal">null</span> || map.size() &lt;= <span class="number">0</span>) {</span><br><span class="line">        parcel.writeInt(<span class="number">0</span>);</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="type">int</span> <span class="variable">lengthPos</span> <span class="operator">=</span> parcel.dataPosition();</span><br><span class="line">    parcel.writeInt(-<span class="number">1</span>); <span class="comment">// placeholder, will hold length</span></span><br><span class="line">    parcel.writeInt(BUNDLE_MAGIC);</span><br><span class="line"></span><br><span class="line">    <span class="type">int</span> <span class="variable">startPos</span> <span class="operator">=</span> parcel.dataPosition();</span><br><span class="line">    parcel.writeArrayMapInternal(map);</span><br><span class="line">    <span class="type">int</span> <span class="variable">endPos</span> <span class="operator">=</span> parcel.dataPosition();</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Backpatch length</span></span><br><span class="line">    parcel.setDataPosition(lengthPos);</span><br><span class="line">    <span class="type">int</span> <span class="variable">length</span> <span class="operator">=</span> endPos - startPos;</span><br><span class="line">    parcel.writeInt(length);</span><br><span class="line">    parcel.setDataPosition(endPos);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<p>Bundle 反序列化过程和序列化过程完全对称，依次读取 Bundle 携带数据的长度、Bundle 魔数和所有键值对。</p>
+<h3 id="LaunchAnyWhere-漏洞">LaunchAnyWhere 漏洞</h3>
+<p>该漏洞源于 Google 的一次漏洞修复，记为 Google Bug 7699048。这是一个 AccountManagerService 的漏洞，利用该漏洞可以启动任意的 Activity，包括未导出的 Activity（不能被外部应用调用的 Activity），从而突破进程间组件访问隔离的限制。该漏洞影响范围为 Android 2.3-4.3。</p>
+<p>首先了解一下 AccountManagerService 这个系统服务。该服务用于管理用户的各种网络帐号，主要涉及帐号的添加和删除，以及 AuthToken 的获取和更新。AccountManagerService 暴露给开发者的接口是 AccountManager，应用开发者可以利用该接口将应用的帐号信息交给系统管理，并与后台服务端自认证处理，这样避免了每次进入应用都需要用户手动输入用户名密码进行验证的繁琐操作。</p>
+<p>添加账户有两种方式：1. 在“设置-&gt;帐号-&gt;添加帐号”中手动添加可提供网络帐号的应用；2. 可提供网络帐号的应用调用 com.android.settings.accounts.AddAccountSettings 接口，让 Settings 自动触发 addAccount 的操作。</p>
+<p>该漏洞的利用过程如下图所示：</p>
+ <img src="LaunchAnyWhere.png" alt="LaunchAnyWhere" style="zoom:50%;">
+<p>Step 0：攻击程序 AppB 调用 com.android.settings.accounts.AddAccountSettings 接口；</p>
+<p>Step 1：Settings 触发 addAccount 操作，向 AccountManagerService 请求添加特定类型的网络帐号；</p>
+<p>Step 2：system_server 查询到 AppB 可以提供该类型的网络帐号，因此向 AppB 发起请求；</p>
+<p>Step 3：AppB 返回了一个 Bundle 给 system_server，该 Bundle 中包含一个恶意 intent，可以调用想要攻击的 Activity；</p>
+<p>Step 4：AccountManagerResponse 在 Settings 的进程空间内调用 startActivity(intent) 启动待攻击的 Activity，而 Settings 并不知情。</p>
+<p>这种设计的本意是，AccountManagerService 帮助 Settings 查找到 AppB 账号登陆页面，并呼起这个登陆页面。而问题在于，AppB 可以任意指定这个 intent 所指向的组件，Settings 将在不知情的情况下由 AccountManagerResponse 调用起了一个 Activity。而 Settings 作为一个系统应用，能够调用起任意 AppB 指定的未导出 Activity。</p>
+<p>Google 在 Android 4.4 中进行了修复，在 AccountManagerService 中对指定的 intent 进行了检查，确保 intent 所指向的 Activity的所属包 与 AppB 具有相同签名。</p>
+<figure class="highlight java"><table><tbody><tr><td class="code"><pre><span class="line">+        <span class="meta">@Override</span></span><br><span class="line">         <span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">onResult</span><span class="params">(Bundle result)</span> {</span><br><span class="line">             mNumResults++;</span><br><span class="line">-            <span class="keyword">if</span> (result != <span class="literal">null</span> &amp;&amp; !TextUtils.isEmpty(result.getString(AccountManager.KEY_AUTHTOKEN))) {</span><br><span class="line">+            <span class="type">Intent</span> <span class="variable">intent</span> <span class="operator">=</span> <span class="literal">null</span>;</span><br><span class="line">+            <span class="keyword">if</span> (result != <span class="literal">null</span></span><br><span class="line">+                    &amp;&amp; (intent = result.getParcelable(AccountManager.KEY_INTENT)) != <span class="literal">null</span>) {</span><br><span class="line">+                <span class="comment">/*</span></span><br><span class="line"><span class="comment">+                 * The Authenticator API allows third party authenticators to</span></span><br><span class="line"><span class="comment">+                 * supply arbitrary intents to other apps that they can run,</span></span><br><span class="line"><span class="comment">+                 * this can be very bad when those apps are in the system like</span></span><br><span class="line"><span class="comment">+                 * the System Settings.</span></span><br><span class="line"><span class="comment">+                 */</span></span><br><span class="line">+                <span class="type">PackageManager</span> <span class="variable">pm</span> <span class="operator">=</span> mContext.getPackageManager();</span><br><span class="line">+                <span class="type">ResolveInfo</span> <span class="variable">resolveInfo</span> <span class="operator">=</span> pm.resolveActivity(intent, <span class="number">0</span>);</span><br><span class="line">+                <span class="type">int</span> <span class="variable">targetUid</span> <span class="operator">=</span> resolveInfo.activityInfo.applicationInfo.uid;</span><br><span class="line">+                <span class="type">int</span> <span class="variable">authenticatorUid</span> <span class="operator">=</span> Binder.getCallingUid();</span><br><span class="line">+                <span class="keyword">if</span> (PackageManager.SIGNATURE_MATCH !=</span><br><span class="line">+                        pm.checkSignatures(authenticatorUid, targetUid)) {</span><br><span class="line">+                    <span class="keyword">throw</span> <span class="keyword">new</span> <span class="title class_">SecurityException</span>(</span><br><span class="line">+                            <span class="string">"Activity to be started with KEY_INTENT must "</span> +</span><br><span class="line">+                            <span class="string">"share Authenticator's signatures"</span>);</span><br><span class="line">+                }</span><br><span class="line">+            }</span><br><span class="line">+            <span class="keyword">if</span> (result != <span class="literal">null</span></span><br><span class="line">+                    &amp;&amp; !TextUtils.isEmpty(result.getString(AccountManager.KEY_AUTHTOKEN))) {</span><br></pre></td></tr></tbody></table></figure>
+<p>AccountManagerService 添加对 intent 的检查之后，上述利用图示则涉及到两次跨进程的序列化数据传输。第一次，AppB将 Bundle 序列化后通过 Binder 传递给 system_server，然后 system_server 通过 Bundle 的 getXXX 方法触发反序列化，获得 KEY_INTENT 这个键所对应的值——一个 Intent 对象，并进行安全检查。若检查通过则调用 writeBundle 进行第二次序列化传输，最后在 Settings 中反序列化后重新获得 {KEY_INTENT: intent}，最终启动相应的 Activity。</p>
+<p>如果 Android 系统中某些 Parcelable 对象的序列化和反序列化过程不匹配，那么就有可能通过精心构造的 payload，使得上述攻击流程中第一次序列化和反序列化匹配，而第二次序列化和反序列化不匹配，从而完美绕过 checkKeyIntent 的检查，最终在 Settings 中暴露出恶意的 KEY_INTENT。</p>
+<h2 id="CVE-2017-0806">CVE-2017-0806</h2>
+<p>该漏洞由 Michal Bednarski 发现，应该是历史上第一个公开的 Android 序列化与反序列化不匹配漏洞，影响的 AOSP 范围为 6.0, 6.0.1, 7.0, 7.1.1, 7.1.2, 8.0。</p>
+<p>frameworks/base/core/java/android/service/gatekeeper/GateKeeperResponse.java</p>
+<figure class="highlight java"><table><tbody><tr><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> Parcelable.Creator&lt;GateKeeperResponse&gt; CREATOR</span><br><span class="line">        = <span class="keyword">new</span> <span class="title class_">Parcelable</span>.Creator&lt;GateKeeperResponse&gt;() {</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> GateKeeperResponse <span class="title function_">createFromParcel</span><span class="params">(Parcel source)</span> {</span><br><span class="line">        <span class="type">int</span> <span class="variable">responseCode</span> <span class="operator">=</span> source.readInt();</span><br><span class="line">        <span class="keyword">final</span> GateKeeperResponse response;</span><br><span class="line">        <span class="keyword">if</span> (responseCode == RESPONSE_RETRY) {</span><br><span class="line">            response = createRetryResponse(source.readInt());</span><br><span class="line">        } <span class="keyword">else</span> <span class="keyword">if</span> (responseCode == RESPONSE_OK) {</span><br><span class="line">            <span class="keyword">final</span> <span class="type">boolean</span> <span class="variable">shouldReEnroll</span> <span class="operator">=</span> source.readInt() == <span class="number">1</span>;</span><br><span class="line">            <span class="type">byte</span>[] payload = <span class="literal">null</span>;</span><br><span class="line">            <span class="type">int</span> <span class="variable">size</span> <span class="operator">=</span> source.readInt();</span><br><span class="line">            <span class="keyword">if</span> (size &gt; <span class="number">0</span>) {</span><br><span class="line">                payload = <span class="keyword">new</span> <span class="title class_">byte</span>[size];</span><br><span class="line">                source.readByteArray(payload);</span><br><span class="line">            }</span><br><span class="line">            response = createOkResponse(payload, shouldReEnroll);</span><br><span class="line">        } <span class="keyword">else</span> {</span><br><span class="line">            response = createGenericResponse(responseCode);</span><br><span class="line">        }</span><br><span class="line">        <span class="keyword">return</span> response;</span><br><span class="line">    }</span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="keyword">public</span> GateKeeperResponse[] newArray(<span class="type">int</span> size) {</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> <span class="title class_">GateKeeperResponse</span>[size];</span><br><span class="line">    }</span><br><span class="line">};</span><br><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title function_">writeToParcel</span><span class="params">(Parcel dest, <span class="type">int</span> flags)</span> {</span><br><span class="line">    dest.writeInt(mResponseCode);</span><br><span class="line">    <span class="keyword">if</span> (mResponseCode == RESPONSE_RETRY) {</span><br><span class="line">        dest.writeInt(mTimeout);</span><br><span class="line">    } <span class="keyword">else</span> <span class="keyword">if</span> (mResponseCode == RESPONSE_OK) {</span><br><span class="line">        dest.writeInt(mShouldReEnroll ? <span class="number">1</span> : <span class="number">0</span>);</span><br><span class="line">        <span class="keyword">if</span> (mPayload != <span class="literal">null</span>) {</span><br><span class="line">            dest.writeInt(mPayload.length);</span><br><span class="line">            dest.writeByteArray(mPayload);</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+<h2 id="CVE-2021-39676">CVE-2021-39676</h2>
+<h2 id="参考-2">参考</h2>
+<p>Bundle风水——Android序列化与反序列化不匹配漏洞详解</p>
+<p><a target="_blank" rel="noopener" href="https://xz.aliyun.com/t/2364">https://xz.aliyun.com/t/2364</a></p>
+<p>launchAnyWhere: Activity组件权限绕过漏洞解析(Google Bug 7699048)</p>
+<p><a target="_blank" rel="noopener" href="http://retme.net/index.php/2014/08/20/launchAnyWhere.html">http://retme.net/index.php/2014/08/20/launchAnyWhere.html</a></p>
+<p>安卓漏洞 CVE 2017-13287 复现分析</p>
+<p><a target="_blank" rel="noopener" href="https://www.anquanke.com/post/id/197710">https://www.anquanke.com/post/id/197710</a></p>
+<p>CVE-2021-39676 AndroidFuture反序列化漏洞分析</p>
+<p><a target="_blank" rel="noopener" href="https://wrlus.com/android-security/cve-2021-39676/">https://wrlus.com/android-security/cve-2021-39676/</a></p>
+<p>Android 序列化与反序列化</p>
+<p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/c2a6161f1546">https://www.jianshu.com/p/c2a6161f1546</a></p>
+<p>Android Intent 详解</p>
+<p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/19147a69e970">https://www.jianshu.com/p/19147a69e970</a></p>
+<p>Android Bundle 机制详解</p>
+<p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/0a50acfbf268">https://www.jianshu.com/p/0a50acfbf268</a></p>
+<p>AccountManagerService 浅析</p>
+<p><a target="_blank" rel="noopener" href="https://www.jianshu.com/p/2609f7a8b034">https://www.jianshu.com/p/2609f7a8b034</a></p>
+<p>CVE-2017-0806 PoC</p>
+<p><a target="_blank" rel="noopener" href="https://github.com/michalbednarski/ReparcelBug">https://github.com/michalbednarski/ReparcelBug</a></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">car0ta</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://car0ta.github.io/2022/09/08/Android-%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8E%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8D%E5%8C%B9%E9%85%8D%E6%BC%8F%E6%B4%9E/">https://car0ta.github.io/2022/09/08/Android-%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8E%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96%E4%B8%8D%E5%8C%B9%E9%85%8D%E6%BC%8F%E6%B4%9E/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Android/">Android</a><a class="post-meta__tags" href="/tags/Vuls/">Vuls</a></div><div class="post_share"><div class="social-share" data-image="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%83%8C%E6%99%AF%E7%9F%A5%E8%AF%86-2"><span class="toc-text">背景知识</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Android-Parcelable-%E5%BA%8F%E5%88%97%E5%8C%96"><span class="toc-text">Android Parcelable 序列化</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Android-Bundle"><span class="toc-text">Android Bundle</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#LaunchAnyWhere-%E6%BC%8F%E6%B4%9E"><span class="toc-text">LaunchAnyWhere 漏洞</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CVE-2017-0806"><span class="toc-text">CVE-2017-0806</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#CVE-2021-39676"><span class="toc-text">CVE-2021-39676</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8F%82%E8%80%83-2"><span class="toc-text">参考</span></a></li></ol></div></div></div></div></main><footer id="footer" style="background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2023 By car0ta</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css"><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/copy-tex.min.js"></script><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/copy-tex.css"><script>(() => {
+  document.querySelectorAll('#article-container span.katex-display').forEach(item => {
+    btf.wrap(item, 'div', { class: 'katex-wrap'})
+  })
+})()</script><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="fluttering_ribbon" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-fluttering-ribbon.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

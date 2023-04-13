@@ -1,0 +1,434 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Static Program Analysis (Interprocedural Analysis) | car0ta</title><meta name="keywords" content="Static Program Analysis"><meta name="author" content="car0ta"><meta name="copyright" content="car0ta"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Motivation 之前学习的各类分析问题都是过程内分析（Intraprocedural Analysis），不涉及到过程间的方法调用。在过程间分析中如果遇到方法调用通常是做最保守的假设，因此会损失精度（大量误报）。 考虑下图中的常量传播分析，采用过程内分析得到的是 x&#x3D;NAC, y&#x3D;NAC, n&#x3D;NAC，而实际上 x&#x3D;42, y&#x3D;43, n&#x3D;10。   为了提高精度，我们需要引入过程间分析（I">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Static Program Analysis (Interprocedural Analysis)">
+<meta property="og:url" content="https://car0ta.github.io/2022/05/11/Static-Program-Analysis-Interprocedural-Analysis/index.html">
+<meta property="og:site_name" content="car0ta">
+<meta property="og:description" content="Motivation 之前学习的各类分析问题都是过程内分析（Intraprocedural Analysis），不涉及到过程间的方法调用。在过程间分析中如果遇到方法调用通常是做最保守的假设，因此会损失精度（大量误报）。 考虑下图中的常量传播分析，采用过程内分析得到的是 x&#x3D;NAC, y&#x3D;NAC, n&#x3D;NAC，而实际上 x&#x3D;42, y&#x3D;43, n&#x3D;10。   为了提高精度，我们需要引入过程间分析（I">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+<meta property="article:published_time" content="2022-05-11T09:15:14.000Z">
+<meta property="article:modified_time" content="2022-05-18T14:54:18.151Z">
+<meta property="article:author" content="car0ta">
+<meta property="article:tag" content="Static Program Analysis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://car0ta.github.io/2022/05/11/Static-Program-Analysis-Interprocedural-Analysis/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Static Program Analysis (Interprocedural Analysis)',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2022-05-18 22:54:18'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="car0ta" type="application/atom+xml">
+</head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">Loading...</div></div></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">16</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">Tags</div><div class="length-num">3</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">Categories</div><div class="length-num">3</div></a></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">car0ta</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Static Program Analysis (Interprocedural Analysis)</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2022-05-11T09:15:14.000Z" title="Created 2022-05-11 17:15:14">2022-05-11</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2022-05-18T14:54:18.151Z" title="Updated 2022-05-18 22:54:18">2022-05-18</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Program-Analysis/">Program Analysis</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.7k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>6min</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Static Program Analysis (Interprocedural Analysis)"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="Motivation-2">Motivation</h2>
+<p>之前学习的各类分析问题都是过程内分析（Intraprocedural Analysis），不涉及到过程间的方法调用。在过程间分析中如果遇到方法调用通常是做最保守的假设，因此会损失精度（大量误报）。</p>
+<p>考虑下图中的常量传播分析，采用过程内分析得到的是 x=NAC, y=NAC, n=NAC，而实际上 x=42, y=43, n=10。</p>
+ <img src="Motivation.png" alt="Motivation" style="zoom:30%;">
+<p>为了提高精度，我们需要引入过程间分析（Interprocedural Analysis）：通过过程间控制流的边（Interprocedural Control-Flow edges, i.e., call and return edges）传递数据流信息。</p>
+<p>为了实现过程间分析，我们需要构建调用图（call graph）。</p>
+<h2 id="Call-Graph-Construction-CHA">Call Graph Construction (CHA)</h2>
+<h3 id="Call-Graph">Call Graph</h3>
+<p>调用图（call graph）代表程序中方法之间的调用关系。换句话说，call graph 是程序中调用边（call edge）的集合，调用边从调用点（call-site）出发到被调函数（callee）。</p>
+ <img src="call-graph-example.png" alt="call-graph-example" style="zoom:30%;">
+<p>call graph 的应用：</p>
+<ul>
+<li>过程间分析的基础</li>
+<li>程序优化、理解、调试、测试等</li>
+</ul>
+<p>调用图构造算法：</p>
+<ul>
+<li>Class hierarchy analysis (CHA)</li>
+<li>Rapid type analysis (RTA)</li>
+<li>Variable type analysis (VTA)</li>
+<li>Pointer analysis (k-CFA)</li>
+</ul>
+<p>从上往下分析越来越精确，但效率越来越低。</p>
+<h3 id="Method-Calls-in-Java">Method Calls in Java</h3>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>static call</th>
+<th>special call</th>
+<th>virtual call</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>指令</td>
+<td>invokestatic</td>
+<td>invokespecial</td>
+<td>invokeinterface<br>invokevirtual</td>
+</tr>
+<tr>
+<td>是否需要实例化对象</td>
+<td>N</td>
+<td>Y</td>
+<td>Y</td>
+</tr>
+<tr>
+<td>被调方法</td>
+<td>静态方法</td>
+<td>构造函数<br>私有实例方法<br>父类实例方法</td>
+<td>其他实例方法</td>
+</tr>
+<tr>
+<td>被调方法个数</td>
+<td>1</td>
+<td>1</td>
+<td>&gt;=1 (多态)</td>
+</tr>
+<tr>
+<td>被调方法确定时机</td>
+<td>编译时</td>
+<td>编译时</td>
+<td>运行时</td>
+</tr>
+</tbody>
+</table>
+<p>构造调用图的关键在于如何处理 virtual call？</p>
+<h3 id="Method-Dispatch-of-Virtual-Calls">Method Dispatch of Virtual Calls</h3>
+<p>在运行时，一个虚调用 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>o</mi><mn>1</mn></msup><mi mathvariant="normal">.</mi><mi>f</mi><mi>o</mi><mi>o</mi><mo stretchy="false">(</mo><mo>…</mo><mtext> </mtext><msup><mo stretchy="false">)</mo><mn>2</mn></msup></mrow><annotation encoding="application/x-tex">o^1.foo(\dots)^2</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.0641em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">o</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">1</span></span></span></span></span></span></span></span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mord mathnormal">oo</span><span class="mopen">(</span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mclose"><span class="mclose">)</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8141em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight">2</span></span></span></span></span></span></span></span></span></span></span> 根据两点来确定具体调用哪个方法：</p>
+<ol>
+<li>调用者实例对象类型（即 o 的类型），记为 c</li>
+<li>调用点的函数签名，记为 m</li>
+</ol>
+<p>方法签名能够唯一标识一个方法，它包括类名、方法名和方法描述符，方法描述符又包括参数类型和返回值类型</p>
+ <img src="method-signature.png" alt="method-signature" style="zoom:30%;">
+<p>Java 中 Dispatch 机制决定运行时具体调用哪个方法，我们定义函数 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>D</mi><mi>i</mi><mi>s</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>c</mi><mi>h</mi><mo stretchy="false">(</mo><mi>c</mi><mo separator="true">,</mo><mi>m</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Dispatch(c, m)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">D</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">c</span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord mathnormal">c</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">m</span><span class="mclose">)</span></span></span></span>：</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>i</mi><mi>s</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>c</mi><mi>h</mi><mo stretchy="false">(</mo><mi>c</mi><mo separator="true">,</mo><mi>m</mi><mo stretchy="false">)</mo><mo>=</mo><mrow><mo fence="true">{</mo><mtable rowspacing="0.36em" columnalign="left left" columnspacing="1em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><msup><mi>m</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mtext>if&nbsp;c&nbsp;contains&nbsp;non-abstract&nbsp;method&nbsp;</mtext><mstyle scriptlevel="0" displaystyle="false"><msup><mi>m</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mstyle><mtext>&nbsp;that</mtext></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mtext>has&nbsp;the&nbsp;same&nbsp;name&nbsp;and&nbsp;descriptor&nbsp;as&nbsp;m</mtext></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>D</mi><mi>i</mi><mi>s</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>c</mi><mi>h</mi><mo stretchy="false">(</mo><msup><mi>c</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo separator="true">,</mo><mi>m</mi><mo stretchy="false">)</mo></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="false"><mrow><mi>o</mi><mi>t</mi><mi>h</mi><mi>e</mi><mi>r</mi><mi>w</mi><mi>i</mi><mi>s</mi><mi>e</mi></mrow></mstyle></mtd></mtr></mtable></mrow><mspace linebreak="newline"></mspace><mrow><mtext>where&nbsp;</mtext><mstyle scriptlevel="0" displaystyle="false"><msup><mi>c</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mstyle><mtext>&nbsp;is&nbsp;superclass&nbsp;of&nbsp;</mtext><mstyle scriptlevel="0" displaystyle="false"><mi>c</mi></mstyle></mrow></mrow><annotation encoding="application/x-tex">Dispatch(c,m)=\begin{cases}
+	m'&amp;\text{if c contains non-abstract method $m'$ that}\\
+	&amp;\text{has the same name and descriptor as m} \\
+	Dispatch(c',m) &amp; otherwise
+\end{cases}
+\\
+\text{where $c'$ is superclass of $c$}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">D</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">c</span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord mathnormal">c</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">m</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:4.32em;vertical-align:-1.91em;"></span><span class="minner"><span class="mopen"><span class="delimsizing mult"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.35em;"><span style="top:-2.2em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎩</span></span></span><span style="top:-2.192em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.316em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.8889em" height="0.316em" style="width:0.8889em" viewBox="0 0 888.89 316" preserveAspectRatio="xMinYMin"><path d="M384 0 H504 V316 H384z M384 0 H504 V316 H384z"></path></svg></span></span><span style="top:-3.15em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎨</span></span></span><span style="top:-4.292em;"><span class="pstrut" style="height:3.15em;"></span><span style="height:0.316em;width:0.8889em;"><svg xmlns="http://www.w3.org/2000/svg" width="0.8889em" height="0.316em" style="width:0.8889em" viewBox="0 0 888.89 316" preserveAspectRatio="xMinYMin"><path d="M384 0 H504 V316 H384z M384 0 H504 V316 H384z"></path></svg></span></span><span style="top:-4.6em;"><span class="pstrut" style="height:3.15em;"></span><span class="delimsizinginner delim-size4"><span>⎧</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.85em;"><span></span></span></span></span></span></span><span class="mord"><span class="mtable"><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.41em;"><span style="top:-4.41em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord"><span class="mord mathnormal">m</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span></span></span><span style="top:-2.97em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"></span></span><span style="top:-1.53em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal" style="margin-right:0.02778em;">D</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">c</span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">m</span><span class="mclose">)</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.91em;"><span></span></span></span></span></span><span class="arraycolsep" style="width:1em;"></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:2.41em;"><span style="top:-4.41em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord text"><span class="mord">if&nbsp;c&nbsp;contains&nbsp;non-abstract&nbsp;method&nbsp;</span><span class="mord"><span class="mord mathnormal">m</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mord">&nbsp;that</span></span></span></span><span style="top:-2.97em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord text"><span class="mord">has&nbsp;the&nbsp;same&nbsp;name&nbsp;and&nbsp;descriptor&nbsp;as&nbsp;m</span></span></span></span><span style="top:-1.53em;"><span class="pstrut" style="height:3.008em;"></span><span class="mord"><span class="mord mathnormal">o</span><span class="mord mathnormal">t</span><span class="mord mathnormal">h</span><span class="mord mathnormal" style="margin-right:0.02778em;">er</span><span class="mord mathnormal" style="margin-right:0.02691em;">w</span><span class="mord mathnormal">i</span><span class="mord mathnormal">se</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.91em;"><span></span></span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.9463em;vertical-align:-0.1944em;"></span><span class="mord text"><span class="mord">where&nbsp;</span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mord">&nbsp;is&nbsp;superclass&nbsp;of&nbsp;</span><span class="mord mathnormal">c</span></span></span></span></span></span></p>
+<p>如果在类 c 当中存在一个和 m 的方法名和描述符都相同的非抽象方法 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>m</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mrow><annotation encoding="application/x-tex">m'</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.7519em;"></span><span class="mord"><span class="mord mathnormal">m</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span></span></span></span>，那么调用该方法，否则递归父类查找。</p>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span></p>
+ <img src="Dispatch-example.png" alt="Dispatch-example" style="zoom:30%;">
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mi>D</mi><mi>i</mi><mi>s</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>c</mi><mi>h</mi><mo stretchy="false">(</mo><mi>B</mi><mo separator="true">,</mo><mi>A</mi><mi mathvariant="normal">.</mi><mi>f</mi><mi>o</mi><mi>o</mi><mo stretchy="false">(</mo><mo stretchy="false">)</mo><mo stretchy="false">)</mo><mo>=</mo><mi>A</mi><mi mathvariant="normal">.</mi><mi>f</mi><mi>o</mi><mi>o</mi><mo stretchy="false">(</mo><mo stretchy="false">)</mo><mspace linebreak="newline"></mspace><mi>D</mi><mi>i</mi><mi>s</mi><mi>p</mi><mi>a</mi><mi>t</mi><mi>c</mi><mi>h</mi><mo stretchy="false">(</mo><mi>C</mi><mo separator="true">,</mo><mi>A</mi><mi mathvariant="normal">.</mi><mi>f</mi><mi>o</mi><mi>o</mi><mo stretchy="false">(</mo><mo stretchy="false">)</mo><mo stretchy="false">)</mo><mo>=</mo><mi>C</mi><mi mathvariant="normal">.</mi><mi>f</mi><mi>o</mi><mi>o</mi><mo stretchy="false">(</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Dispatch(B, A.foo())=A.foo()
+\\
+Dispatch(C, A.foo())=C.foo()
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">D</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">c</span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.05017em;">B</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">A</span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mord mathnormal">oo</span><span class="mopen">(</span><span class="mclose">))</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">A</span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mord mathnormal">oo</span><span class="mopen">(</span><span class="mclose">)</span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.02778em;">D</span><span class="mord mathnormal">i</span><span class="mord mathnormal">s</span><span class="mord mathnormal">p</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">c</span><span class="mord mathnormal">h</span><span class="mopen">(</span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal">A</span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mord mathnormal">oo</span><span class="mopen">(</span><span class="mclose">))</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mord mathnormal">oo</span><span class="mopen">(</span><span class="mclose">)</span></span></span></span></span></p>
+<h3 id="Class-Hierarchy-Analysis-CHA">Class Hierarchy Analysis (CHA)</h3>
+<p>类继承分析（CHA）通过查找类的继承结构来确定具体的被调方法：</p>
+<ul>
+<li>
+<p>需要整个程序中类的继承信息（继承结构）</p>
+</li>
+<li>
+<p>根据调用点的接收变量（receiver variable）的声明类型来解析 virtual call（下面代码中的 a 就是接收变量）</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mtable rowspacing="0.25em" columnalign="right left" columnspacing="0em"><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mi>A</mi><mtext>  </mtext><mi>a</mi><mo>=</mo><mo>…</mo><mo separator="true">;</mo></mrow></mstyle></mtd></mtr><mtr><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow></mrow></mstyle></mtd><mtd><mstyle scriptlevel="0" displaystyle="true"><mrow><mrow></mrow><mstyle mathcolor="red"><mi>a</mi></mstyle><mi mathvariant="normal">.</mi><mi>f</mi><mi>o</mi><mi>o</mi><mo stretchy="false">(</mo><mo stretchy="false">)</mo><mo separator="true">;</mo></mrow></mstyle></mtd></mtr></mtable><annotation encoding="application/x-tex">\begin{aligned}
+&amp;A\;a=\ldots; \\
+&amp;\textcolor{red}{a}.foo();
+\end{aligned}
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:3em;vertical-align:-1.25em;"></span><span class="mord"><span class="mtable"><span class="col-align-r"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.75em;"><span style="top:-3.75em;"><span class="pstrut" style="height:2.84em;"></span><span class="mord"></span></span><span style="top:-2.25em;"><span class="pstrut" style="height:2.84em;"></span><span class="mord"></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.25em;"><span></span></span></span></span></span><span class="col-align-l"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:1.75em;"><span style="top:-3.91em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord mathnormal">A</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal">a</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">;</span></span></span><span style="top:-2.41em;"><span class="pstrut" style="height:3em;"></span><span class="mord"><span class="mord"></span><span class="mord mathnormal" style="color:red;">a</span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.10764em;">f</span><span class="mord mathnormal">oo</span><span class="mopen">(</span><span class="mclose">)</span><span class="mpunct">;</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:1.25em;"><span></span></span></span></span></span></span></span></span></span></span></span></p>
+</li>
+<li>
+<p>假设接收变量 a 可以指向 A 类及 A 的所有子类的对象</p>
+</li>
+</ul>
+<h3 id="Call-Resolution-of-CHA">Call Resolution of CHA</h3>
+<p>我们定义函数 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>R</mi><mi>e</mi><mi>s</mi><mi>o</mi><mi>l</mi><mi>v</mi><mi>e</mi><mo stretchy="false">(</mo><mi>c</mi><mi>s</mi><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">Resolve(cs)</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal" style="margin-right:0.00773em;">R</span><span class="mord mathnormal">eso</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mord mathnormal" style="margin-right:0.03588em;">v</span><span class="mord mathnormal">e</span><span class="mopen">(</span><span class="mord mathnormal">cs</span><span class="mclose">)</span></span></span></span> 来分析调用点 cs 处可能的目标方法，具体算法如下：</p>
+ <img src="Resolve-algorithm.png" alt="Resolve-algorithm" style="zoom:30%;">
+<ul>
+<li>
+<p>如果 cs 是 static call，直接将该方法签名加入集合 T</p>
+  <img src="static-call.png" alt="static-call" style="zoom:30%;">
+</li>
+<li>
+<p>如果 cs 是 special call，取方法 m 的类 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><msup><mi>c</mi><mi>m</mi></msup></mrow><annotation encoding="application/x-tex">c^m</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6644em;"></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.6644em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">m</span></span></span></span></span></span></span></span></span></span></span> 并调用 Dispatch 函数，将结果加入集合 T</p>
+<ul>
+<li>
+<p>构造函数（Constructor）</p>
+  <img src="special-call-constructor.png" alt="special-call-constructor" style="zoom:30%;">
+</li>
+<li>
+<p>私有实例方法（private instance method）</p>
+</li>
+<li>
+<p>父类实例方法（Superclass instance method）</p>
+  <img src="special-call-superclass.png" alt="special-call-superclass" style="zoom:30%;">
+</li>
+</ul>
+</li>
+<li>
+<p>如果 cs 是 virtual call，取 cs 处接收变量的声明类型 c，遍历 c 及 c 的所有子类并调用 Dispatch 函数，将结果加入集合 T</p>
+ <img src="virutal-call.png" alt="virutal-call" style="zoom:33%;">
+</li>
+</ul>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span></p>
+ <img src="CHA-example.png" alt="CHA-example" style="zoom:30%;">
+<p>CHA 只考虑调用点处接收变量的声明类型去分析目标方法，即使实际 new 了一个 B 类，依然会产生两个误报 C.foo() 和 D.foo()</p>
+<p>CHA 的特征：</p>
+<ul>
+<li>
+<p>Advantage: fast</p>
+<p>仅考虑 call-site 处接收变量的声明类型及其类的继承结构，而忽略了数据流和控制流信息。</p>
+</li>
+<li>
+<p>Disadvantage: imprecise</p>
+<p>容易产生大量误报</p>
+</li>
+</ul>
+<p>CHA 的应用：IDE（如 Intellij IDEA）</p>
+ <img src="CHA-in-IDE.png" alt="CHA-in-IDE" style="zoom:30%;">
+<h3 id="Call-Graph-Construction">Call Graph Construction</h3>
+<p>通过 CHA 构建整个程序的 call graph：</p>
+<ul>
+<li>从入口方法开始（main method）</li>
+<li>对于每一个可达方法 m，通过 CHA 算法分析一个调用点的目标方法</li>
+<li>重复以上步骤直到没有可达的新方法</li>
+</ul>
+<p>具体算法：</p>
+ <img src="call-graph-algorithm.png" alt="call-graph-algorithm" style="zoom:30%;">
+<ul>
+<li>WL 即 WorkList，记录需要处理的 methods</li>
+<li>CG 即 call graph，是 call edges 的集合</li>
+<li>RM 即 Reachable Method，记录已经处理的 methods</li>
+</ul>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span></p>
+ <img src="call-graph-construction.png" alt="call-graph-construction" style="zoom:30%;">
+<h2 id="Interprocedural-Control-Flow-Graph">Interprocedural Control-Flow Graph</h2>
+<ul>
+<li>
+<p>CFG 表示单个 method 控制流关系</p>
+</li>
+<li>
+<p>ICFG 表示整个程序的控制流关系（借助 ICFG 我们可以实现过程间分析）</p>
+</li>
+<li>
+<p>一个程序的 ICFG 包括程序中所有方法的 CFG，以及两种额外边：</p>
+<ul>
+<li>
+<p>Call edges：从调用点（call-sites）出发到被调函数（callees）的 entry 节点</p>
+</li>
+<li>
+<p>return edges：从被调函数的返回语句（return statements）到调用点的下一条语句（return sites）</p>
+  <img src="call&amp;return-site.png" alt="call&amp;return-site" style="zoom:30%;">
+</li>
+</ul>
+</li>
+</ul>
+<p>我们可以理解为 ICFG = CFGs + call &amp; return edges，而如何在 CFG 的基础上添加 call edges 和 return edges 就需要用到上文中构建的 call graph。</p>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span></p>
+ <img src="ICFG-example.png" alt="ICFG-example" style="zoom:30%;">
+<h2 id="Interprocedural-Data-Flow-Analysis">Interprocedural Data-Flow Analysis</h2>
+<p>过程间数据流分析即在 ICFG 的基础上对程序进行数据流分析，与过程内数据流分析对比如下：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th><font color="green">Intra</font>procedural</th>
+<th><font color="green">Inter</font>procedural</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Program representation</td>
+<td>CFG</td>
+<td>ICFG = CFGs + <font color="red">call &amp; return edges</font></td>
+</tr>
+<tr>
+<td>Transfer functions</td>
+<td>Node transfer</td>
+<td>Node transfer + <font color="red">edge transfer</font></td>
+</tr>
+</tbody>
+</table>
+<p>Edge transfer 包括：</p>
+<ul>
+<li>
+<p>call edge transfer：从 call node 到 callee 的 entry node 传递数据流（传参数）</p>
+</li>
+<li>
+<p>return edge transfer：从return node 到 return site 传递数据流（传返回值）</p>
+</li>
+</ul>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span>：Interprocedural Constant Propagation（过程间常量传播分析）</p>
+<ul>
+<li>
+<p>Call edge transfer: pass argument values</p>
+</li>
+<li>
+<p>Return edge transfer: pass return values</p>
+</li>
+<li>
+<p>Node transfer: 和 Intraprocedural Constant Propagation 相似，<strong>但对于每一个 call node，需要 kill 掉 LHS(Left Hand Side) variable</strong></p>
+  <img src="Node-transfer.png" alt="Node-transfer" style="zoom:40%;">
+</li>
+</ul>
+<p>分析结果：</p>
+ <img src="Interprocedural-Constant-Propagation.png" alt="Interprocedural-Constant-Propagation" style="zoom:30%;">
+<p>Q：为什么要保留从 call site 到 return site 的边（call-to-return edge）？</p>
+<p>A：call-to-return edge 能够在方法内传递本地数据流，如果没有这条边则需要当前方法内的上下文变量传递到被调函数，这是非常低效的！</p>
+ <img src="call-to-return-edge.png" alt="call-to-return-edge" style="zoom:33%;">
+<p>假如是 Intraprocedural Constant Propagation（过程内常量传播分析），其分析结果为：</p>
+ <img src="Intraprocedural-Constant-Propagation.png" alt="Intraprocedural-Constant-Propagation" style="zoom:30%;">
+<p>显然过程间分析要比过程内分析更加精确！</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">car0ta</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://car0ta.github.io/2022/05/11/Static-Program-Analysis-Interprocedural-Analysis/">https://car0ta.github.io/2022/05/11/Static-Program-Analysis-Interprocedural-Analysis/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Static-Program-Analysis/">Static Program Analysis</a></div><div class="post_share"><div class="social-share" data-image="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Motivation-2"><span class="toc-text">Motivation</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Call-Graph-Construction-CHA"><span class="toc-text">Call Graph Construction (CHA)</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Call-Graph"><span class="toc-text">Call Graph</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Method-Calls-in-Java"><span class="toc-text">Method Calls in Java</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Method-Dispatch-of-Virtual-Calls"><span class="toc-text">Method Dispatch of Virtual Calls</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Class-Hierarchy-Analysis-CHA"><span class="toc-text">Class Hierarchy Analysis (CHA)</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Call-Resolution-of-CHA"><span class="toc-text">Call Resolution of CHA</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Call-Graph-Construction"><span class="toc-text">Call Graph Construction</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Interprocedural-Control-Flow-Graph"><span class="toc-text">Interprocedural Control-Flow Graph</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Interprocedural-Data-Flow-Analysis"><span class="toc-text">Interprocedural Data-Flow Analysis</span></a></li></ol></div></div></div></div></main><footer id="footer" style="background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2023 By car0ta</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css"><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/copy-tex.min.js"></script><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/copy-tex.css"><script>(() => {
+  document.querySelectorAll('#article-container span.katex-display').forEach(item => {
+    btf.wrap(item, 'div', { class: 'katex-wrap'})
+  })
+})()</script><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="fluttering_ribbon" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-fluttering-ribbon.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>

@@ -1,0 +1,344 @@
+<!DOCTYPE html><html lang="en" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Static Program Analysis (Pointer Analysis-Context Sensitivity) | car0ta</title><meta name="keywords" content="Static Program Analysis"><meta name="author" content="car0ta"><meta name="copyright" content="car0ta"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="Motivation 之前学习指针分析都是上下文不敏感（Context-Insensitive）的指针分析，但是它的问题就是不精确。 考虑使用上下文不敏感的指针分析：对于变量 i，由于 x.get()x.get()x.get() 存在 2 个 call targets，因此 i 的值可能是1也可能是2，所以结果是 i&#x3D;NAC。然而显然实际运行时 i&#x3D;1，从而造成分析错误。   考虑使用上下文敏感的">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Static Program Analysis (Pointer Analysis-Context Sensitivity)">
+<meta property="og:url" content="https://car0ta.github.io/2022/05/18/Static-Program-Analysis-Pointer-Analysis-Context-Sensitivity/index.html">
+<meta property="og:site_name" content="car0ta">
+<meta property="og:description" content="Motivation 之前学习指针分析都是上下文不敏感（Context-Insensitive）的指针分析，但是它的问题就是不精确。 考虑使用上下文不敏感的指针分析：对于变量 i，由于 x.get()x.get()x.get() 存在 2 个 call targets，因此 i 的值可能是1也可能是2，所以结果是 i&#x3D;NAC。然而显然实际运行时 i&#x3D;1，从而造成分析错误。   考虑使用上下文敏感的">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
+<meta property="article:published_time" content="2022-05-18T15:11:47.000Z">
+<meta property="article:modified_time" content="2022-05-22T08:53:44.872Z">
+<meta property="article:author" content="car0ta">
+<meta property="article:tag" content="Static Program Analysis">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"><link rel="shortcut icon" href="/img/favicon.png"><link rel="canonical" href="https://car0ta.github.io/2022/05/18/Static-Program-Analysis-Pointer-Analysis-Context-Sensitivity/"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6/css/all.min.css" media="print" onload="this.media='all'"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = { 
+  root: '/',
+  algolia: undefined,
+  localSearch: undefined,
+  translate: undefined,
+  noticeOutdate: undefined,
+  highlight: {"plugin":"highlighjs","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false},
+  copy: {
+    success: 'Copy successfully',
+    error: 'Copy error',
+    noSupport: 'The browser does not support'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: 'days',
+  date_suffix: {
+    just: 'Just',
+    min: 'minutes ago',
+    hour: 'hours ago',
+    day: 'days ago',
+    month: 'months ago'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  source: {
+    justifiedGallery: {
+      js: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.js',
+      css: 'https://cdn.jsdelivr.net/npm/flickr-justified-gallery@2/dist/fjGallery.min.css'
+    }
+  },
+  isPhotoFigcaption: false,
+  islazyload: false,
+  isAnchor: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Static Program Analysis (Pointer Analysis-Context Sensitivity)',
+  isPost: true,
+  isHome: false,
+  isHighlightShrink: false,
+  isToc: true,
+  postUpdate: '2022-05-22 16:53:44'
+}</script><noscript><style type="text/css">
+  #nav {
+    opacity: 1
+  }
+  .justified-gallery img {
+    opacity: 1
+  }
+
+  #recent-posts time,
+  #post-meta time {
+    display: inline !important
+  }
+</style></noscript><script>(win=>{
+    win.saveToLocal = {
+      set: function setWithExpiry(key, value, ttl) {
+        if (ttl === 0) return
+        const now = new Date()
+        const expiryDay = ttl * 86400000
+        const item = {
+          value: value,
+          expiry: now.getTime() + expiryDay,
+        }
+        localStorage.setItem(key, JSON.stringify(item))
+      },
+
+      get: function getWithExpiry(key) {
+        const itemStr = localStorage.getItem(key)
+
+        if (!itemStr) {
+          return undefined
+        }
+        const item = JSON.parse(itemStr)
+        const now = new Date()
+
+        if (now.getTime() > item.expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return item.value
+      }
+    }
+  
+    win.getScript = url => new Promise((resolve, reject) => {
+      const script = document.createElement('script')
+      script.src = url
+      script.async = true
+      script.onerror = reject
+      script.onload = script.onreadystatechange = function() {
+        const loadState = this.readyState
+        if (loadState && loadState !== 'loaded' && loadState !== 'complete') return
+        script.onload = script.onreadystatechange = null
+        resolve()
+      }
+      document.head.appendChild(script)
+    })
+  
+      win.activateDarkMode = function () {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      win.activateLightMode = function () {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+      const t = saveToLocal.get('theme')
+    
+          if (t === 'dark') activateDarkMode()
+          else if (t === 'light') activateLightMode()
+        
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        if (asideStatus === 'hide') {
+          document.documentElement.classList.add('hide-aside')
+        } else {
+          document.documentElement.classList.remove('hide-aside')
+        }
+      }
+    
+    const detectApple = () => {
+      if(/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)){
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+    })(window)</script><meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+<link rel="alternate" href="/atom.xml" title="car0ta" type="application/atom+xml">
+</head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">Loading...</div></div></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img is-center"><img src="/img/avatar.png" onerror="onerror=null;src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data is-center"><div class="data-item"><a href="/archives/"><div class="headline">Articles</div><div class="length-num">16</div></a></div><div class="data-item"><a href="/tags/"><div class="headline">Tags</div><div class="length-num">3</div></a></div><div class="data-item"><a href="/categories/"><div class="headline">Categories</div><div class="length-num">3</div></a></div></div><hr/><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')"><nav id="nav"><span id="blog_name"><a id="site-name" href="/">car0ta</a></span><div id="menus"><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> Home</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> Archives</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> Tags</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> Categories</span></a></div><div class="menus_item"><a class="site-page" href="/link/"><i class="fa-fw fas fa-link"></i><span> Link</span></a></div><div class="menus_item"><a class="site-page" href="/about/"><i class="fa-fw fas fa-heart"></i><span> About</span></a></div></div><div id="toggle-menu"><a class="site-page"><i class="fas fa-bars fa-fw"></i></a></div></div></nav><div id="post-info"><h1 class="post-title">Static Program Analysis (Pointer Analysis-Context Sensitivity)</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">Created</span><time class="post-meta-date-created" datetime="2022-05-18T15:11:47.000Z" title="Created 2022-05-18 23:11:47">2022-05-18</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">Updated</span><time class="post-meta-date-updated" datetime="2022-05-22T08:53:44.872Z" title="Updated 2022-05-22 16:53:44">2022-05-22</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Program-Analysis/">Program Analysis</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">Word count:</span><span class="word-count">1.5k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">Reading time:</span><span>6min</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title="Static Program Analysis (Pointer Analysis-Context Sensitivity)"><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">Post View:</span><span id="busuanzi_value_page_pv"></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="post-content" id="article-container"><h2 id="Motivation-3">Motivation</h2>
+<p>之前学习指针分析都是上下文不敏感（Context-Insensitive）的指针分析，但是它的问题就是不精确。</p>
+<p>考虑使用上下文不敏感的指针分析：对于变量 i，由于 <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mi>x</mi><mi mathvariant="normal">.</mi><mi>g</mi><mi>e</mi><mi>t</mi><mo stretchy="false">(</mo><mo stretchy="false">)</mo></mrow><annotation encoding="application/x-tex">x.get()</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord mathnormal">x</span><span class="mord">.</span><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="mord mathnormal">e</span><span class="mord mathnormal">t</span><span class="mopen">(</span><span class="mclose">)</span></span></span></span> 存在 2 个 call targets，因此 i 的值可能是1也可能是2，所以结果是 i=NAC。然而显然实际运行时 i=1，从而造成分析错误。</p>
+ <img src="context-insensitive.png" alt="context-insensitive" style="zoom:30%;">
+<p>考虑使用上下文敏感的指针分析：对于 id() 方法的两次调用分别维护不同的上下文信息，从而精确地得到 i=1。</p>
+ <img src="context-sensitive.png" alt="context-sensitive" style="zoom:30%;">
+<h2 id="Introduction-2">Introduction</h2>
+<h3 id="C-I-vs-C-S">C.I. vs C.S.</h3>
+<p>Context Insensitivity (C.I.)</p>
+<ul>
+<li>在动态执行时，一个方法可能被不同的调用上下文（calling context）调用多次</li>
+<li>不同的调用上下文被混合并传播给程序的其他部分，从而产生假的数据流</li>
+</ul>
+<p>Context Sensitivity (C.S.)</p>
+<ul>
+<li>上下文敏感分析通过区分不同上下文的数据流对调用上下文进行建模，从而提高精度</li>
+<li>非常知名的一个上下文敏感策略叫做 call-site (call-string) sensitivity，即方法的每个上下文是一条 call-site 链</li>
+</ul>
+<p>Cloning-Based Context Sensitivity</p>
+<ul>
+<li>
+<p>Cloning-Based 是实现上下文敏感的指针分析的最简单的方法</p>
+</li>
+<li>
+<p>对于每一个方法，每到新的上下文就克隆一份新的方法和变量</p>
+<img src="Cloning-Based.png" alt="Cloning-Based" style="zoom:30%;">
+</li>
+</ul>
+<h3 id="Context-Sensitive-Heap">Context-Sensitive Heap</h3>
+<p>在实际应用中，为了提高指针分析的精确性，上下文敏感技术也要应用到堆抽象中</p>
+<ul>
+<li>
+<p>堆抽象后的对象也作为一种上下文（heap contexts），通常从这类对象被创建的方法里继承上下文</p>
+</li>
+<li>
+<p>Context-sensitive heap abstraction 要比 allocation-site abstraction 更加细粒度</p>
+ <img src="context-sensitive-heap-abstraction.png" alt="context-sensitive-heap-abstraction" style="zoom:40%;">
+</li>
+</ul>
+<p>为什么上下文敏感的堆抽象技术能提高精度？</p>
+<ul>
+<li>在动态执行过程中，一个创建点（allocation site）在不同的调用上下文（calling context）中可能会创建多个对象；</li>
+<li>同一创建点下的不同对象会有不同的数据流，如果没有 heap contexts 则会合并这些数据流，从而损失精度。</li>
+</ul>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span></p>
+ <img src="Context-Sensitive-Heap.png" alt="Context-Sensitive-Heap" style="zoom:30%;">
+<p>需要注意的是，variable 和 heap 的上下文敏感二者结合才能提升精度，单独的 context-sensitive heap 不能提升精度。</p>
+ <img src="single-CS-heap.png" alt="single-CS-heap" style="zoom:30%;">
+<h2 id="Context-Sensitive-Pointer-Analysis-Rules">Context Sensitive Pointer Analysis: Rules</h2>
+<h3 id="Domains">Domains</h3>
+<p>在上下文敏感的指针分析中，程序中的各类元素都被上下文限定：</p>
+ <img src="Domains.png" alt="Domains" style="zoom:30%;">
+<h3 id="Rules-Without-Call">Rules: Without Call</h3>
+ <img src="Rules.png" alt="Rules" style="zoom:30%;">
+<h3 id="Rule-Call">Rule: Call</h3>
+ <img src="Rule-call.png" alt="Rule-call" style="zoom:30%;">
+<p>上下文敏感实际记录了函数调用栈（上下文），而上下文不敏感在进入 callee 后就无法知道 caller 的信息。</p>
+<h2 id="Context-Sensitive-Pointer-Analysis-Algorithms">Context Sensitive Pointer Analysis: Algorithms</h2>
+<h3 id="Pointer-Flow-Graph-with-C-S">Pointer Flow Graph with C.S.</h3>
+<p>实现 context-sensitive pointer analysis 与 context-insensitive pointer analysis 类似，只是在 PFG 中加入了上下文信息。</p>
+ <img src="context-sensitive-pointer-analysis.png" alt="context-sensitive-pointer-analysis" style="zoom:30%;">
+<p>我们定义 PFG with C.S. 的节点和边：</p>
+ <img src="Nodes-and-Edges.png" alt="Nodes-and-Edges" style="zoom:30%;">
+<h3 id="Pointer-Flow-Graph-Edges">Pointer Flow Graph: Edges</h3>
+ <img src="PFG-add-Edge.png" alt="PFG-add-Edge" style="zoom:30%;">
+<h3 id="Pointer-Flow-Graph-Call">Pointer Flow Graph: Call</h3>
+ <img src="PFG-call-add-edge.png" alt="PFG-call-add-edge" style="zoom:30%;">
+<h3 id="C-S-Pointer-Analysis-Algorithm">C.S. Pointer Analysis: Algorithm</h3>
+ <img src="Algorithm.png" alt="Algorithm" style="zoom:35%;">
+<ul>
+<li>
+<p>算法中 Propagate() 和 AddEdge() 函数与先前的 C.I. Pointer Analysis 分析中是完全相同的。</p>
+ <img src="Propagate-and-AddEdge.png" alt="Propagate-and-AddEdge" style="zoom:30%;">
+</li>
+<li>
+<p>算法中最关键的就是 ProcessCall() 函数，其中 Select() 函数作用是选择具体的 callee 上下文，根据 Select() 函数的实现的不同导致 C.S. Pointer Analysis 的多种变种（见下一部分）</p>
+</li>
+</ul>
+<h2 id="Context-Sensitivity-Variants">Context Sensitivity Variants</h2>
+<p>根据 select() 函数实现的不同，C.S. Pointer Analysis 有三种：</p>
+ <img src="CS-Variants.png" alt="CS-Variants" style="zoom:30%;">
+<h3 id="Call-Site-Sensitivity">Call-Site Sensitivity</h3>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="red"><mi>S</mi><mi>e</mi><mi>l</mi><mi>e</mi><mi>c</mi><mi>t</mi></mstyle><mo stretchy="false">(</mo><mi>c</mi><mo separator="true">,</mo><mi>l</mi><mo separator="true">,</mo><mi mathvariant="normal">_</mi><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">[</mo><mstyle mathcolor="red"><mrow><msup><mi>l</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msup><mi>l</mi><mrow><mo mathvariant="normal">′</mo><mo mathvariant="normal">′</mo></mrow></msup></mrow></mstyle><mo separator="true">,</mo><mi>l</mi><mo stretchy="false">]</mo><mspace linebreak="newline"></mspace><mtext>where&nbsp;</mtext><mi>c</mi><mo>=</mo><mo stretchy="false">[</mo><mstyle mathcolor="red"><msup><mi>l</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msup><mi>l</mi><mrow><mo mathvariant="normal">′</mo><mo mathvariant="normal">′</mo></mrow></msup></mstyle><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\textcolor{red}{Select}(c,l,\_)=[{\color{red}{l',\ldots,l''}},l ] \\
+\text{where }c=[\textcolor{red}{l',\ldots ,l''}]
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.06em;vertical-align:-0.31em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;color:red;">S</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">ec</span><span class="mord mathnormal" style="color:red;">t</span><span class="mopen">(</span><span class="mord mathnormal">c</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0519em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord"><span class="mord" style="color:red;"><span class="mord" style="color:red;"><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mtight" style="color:red;"><span class="mord mtight" style="color:red;">′</span></span></span></span></span></span></span></span></span><span class="mpunct" style="color:red;">,</span><span class="mspace" style="color:red;margin-right:0.1667em;"></span><span class="minner" style="color:red;">…</span><span class="mspace" style="color:red;margin-right:0.1667em;"></span><span class="mpunct" style="color:red;">,</span><span class="mspace" style="color:red;margin-right:0.1667em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mtight" style="color:red;"><span class="mord mtight" style="color:red;">′′</span></span></span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mclose">]</span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord">where&nbsp;</span></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0519em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord" style="color:red;"><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mtight" style="color:red;"><span class="mord mtight" style="color:red;">′</span></span></span></span></span></span></span></span></span><span class="mpunct" style="color:red;">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner" style="color:red;">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct" style="color:red;">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mtight" style="color:red;"><span class="mord mtight" style="color:red;">′′</span></span></span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span></span></p>
+<p>每一个上下文都是一个调用点的链（调用链）</p>
+<ul>
+<li>对于每一个方法调用，将 caller context 和当前的 call site 一起作为 callee context</li>
+<li>实际上是调用栈的抽象表示</li>
+<li>也叫做 call-string sensitivity 或者 k-CFA</li>
+</ul>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span></p>
+ <img src="call-site-sensitivity-example.png" alt="call-site-sensitivity-example" style="zoom:30%;">
+<p>如果存在递归调用的情况，那么某个函数的上下文可能有无穷多个：</p>
+ <img src="recursive-call.png" alt="recursive-call" style="zoom:30%;">
+<h4 id="k-limiting-Context-Abstraction">k-limiting Context Abstraction</h4>
+<p>为了解决递归调用存在过多上下文的问题，我们将上下文的长度设置一个上界，记作 k：</p>
+<ul>
+<li>每个上下文的调用链中只保存最后 k 个 call sites</li>
+<li>在实际分析中 k 是一个很小的数，通常 &lt;=3</li>
+<li>Method contexts（通常 k=2）和 heap contexts（通常 k=1）通常使用不同的 k</li>
+</ul>
+<h4 id="k-Call-Site-Sensitivity-k-CFA">k-Call-Site Sensitivity/k-CFA</h4>
+<p>1-call-site/1-CFA</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="red"><mi>S</mi><mi>e</mi><mi>l</mi><mi>e</mi><mi>c</mi><mi>t</mi></mstyle><mo stretchy="false">(</mo><mi mathvariant="normal">_</mi><mo separator="true">,</mo><mi>l</mi><mo separator="true">,</mo><mi mathvariant="normal">_</mi><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">[</mo><mi>l</mi><mo stretchy="false">]</mo><mspace linebreak="newline"></mspace></mrow><annotation encoding="application/x-tex">\textcolor{red}{Select}(\_,l,\_)=[l] \\
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.06em;vertical-align:-0.31em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;color:red;">S</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">ec</span><span class="mord mathnormal" style="color:red;">t</span><span class="mopen">(</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mclose">]</span></span><span class="mspace newline"></span></span></span></span></p>
+ <img src="1-call-site.png" alt="1-call-site" style="zoom:30%;">
+<p>2-call-site/2-CFA</p>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="red"><mi>S</mi><mi>e</mi><mi>l</mi><mi>e</mi><mi>c</mi><mi>t</mi></mstyle><mo stretchy="false">(</mo><mi>c</mi><mo separator="true">,</mo><mi>l</mi><mo separator="true">,</mo><mi mathvariant="normal">_</mi><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">[</mo><mstyle mathcolor="red"><msup><mi>l</mi><mrow><mo mathvariant="normal">′</mo><mo mathvariant="normal">′</mo></mrow></msup></mstyle><mo separator="true">,</mo><mi>l</mi><mo stretchy="false">]</mo><mspace linebreak="newline"></mspace><mtext>where&nbsp;</mtext><mi>c</mi><mo>=</mo><mo stretchy="false">[</mo><msup><mi>l</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo separator="true">,</mo><mstyle mathcolor="red"><msup><mi>l</mi><mrow><mo mathvariant="normal">′</mo><mo mathvariant="normal">′</mo></mrow></msup></mstyle><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\textcolor{red}{Select}(c,l,\_)=[\textcolor{red}{l''},l] \\
+\text{where }c=[l',\textcolor{red}{l''}]
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.06em;vertical-align:-0.31em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;color:red;">S</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">ec</span><span class="mord mathnormal" style="color:red;">t</span><span class="mopen">(</span><span class="mord mathnormal">c</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0519em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord" style="color:red;"><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mtight" style="color:red;"><span class="mord mtight" style="color:red;">′′</span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="mclose">]</span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.6944em;"></span><span class="mord text"><span class="mord">where&nbsp;</span></span><span class="mord mathnormal">c</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0519em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mtight" style="color:red;"><span class="mord mtight" style="color:red;">′′</span></span></span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span></span></p>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span> 1-call-site</p>
+ <img src="1-call-site-example.png" alt="1-call-site-example" style="zoom:33%;">
+<h3 id="Object-Sensitivity">Object Sensitivity</h3>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="red"><mi>S</mi><mi>e</mi><mi>l</mi><mi>e</mi><mi>c</mi><mi>t</mi></mstyle><mo stretchy="false">(</mo><mi mathvariant="normal">_</mi><mo separator="true">,</mo><mi mathvariant="normal">_</mi><mo separator="true">,</mo><mrow><msup><mi mathvariant="bold">c</mi><mo mathvariant="bold" lspace="0em" rspace="0em">′</mo></msup><mo>:</mo><msub><mi mathvariant="bold">o</mi><mi mathvariant="bold">i</mi></msub></mrow><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">[</mo><mstyle mathcolor="red"><msub><mi>o</mi><mi>j</mi></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>o</mi><mi>k</mi></msub></mstyle><mo separator="true">,</mo><msub><mi>o</mi><mi>i</mi></msub><mo stretchy="false">]</mo><mspace linebreak="newline"></mspace><mtext>where&nbsp;</mtext><msup><mi>c</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>=</mo><mo stretchy="false">[</mo><msup><mi>l</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo separator="true">,</mo><mstyle mathcolor="red"><msub><mi>o</mi><mi>j</mi></msub><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msub><mi>o</mi><mi>k</mi></msub></mstyle><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\textcolor{red}{Select}(\_,\_,{\bf{c':o_i}})=[\textcolor{red}{o_j,\ldots,o_k},o_i] \\
+\text{where }c'=[l',\textcolor{red}{o_j,\ldots,o_k}]
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.1119em;vertical-align:-0.31em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;color:red;">S</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">ec</span><span class="mord mathnormal" style="color:red;">t</span><span class="mopen">(</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord"><span class="mord"><span class="mord"><span class="mord mathbf">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathbf mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">:</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord"><span class="mord mathbf">o</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathbf mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0361em;vertical-align:-0.2861em;"></span><span class="mopen">[</span><span class="mord" style="color:red;"><span class="mord mathnormal" style="color:red;">o</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mathnormal mtight" style="margin-right:0.05724em;color:red;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct" style="color:red;">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner" style="color:red;">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct" style="color:red;">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="color:red;">o</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mathnormal mtight" style="margin-right:0.03148em;color:red;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">o</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">]</span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.8019em;"></span><span class="mord text"><span class="mord">where&nbsp;</span></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.088em;vertical-align:-0.2861em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.01968em;">l</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="color:red;">o</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mathnormal mtight" style="margin-right:0.05724em;color:red;">j</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.2861em;"><span></span></span></span></span></span></span><span class="mpunct" style="color:red;">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner" style="color:red;">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct" style="color:red;">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="color:red;"><span class="mord mathnormal" style="color:red;">o</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3361em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight" style="color:red;"><span class="mord mathnormal mtight" style="margin-right:0.03148em;color:red;">k</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span></span></p>
+<p>每一个上下文都是 abstract objects（用 allocation site 表示） 的一个链</p>
+<ul>
+<li>对于一个方法调用，将 receiver objects 和它的 heap context 一起作为 callee context</li>
+<li>区分不同对象上的数据流操作</li>
+<li>也叫做 allocation-site sensitivity</li>
+</ul>
+<p><span class="github-emoji"><span>🌰</span><img src="https://github.githubassets.com/images/icons/emoji/unicode/1f330.png?v8" aria-hidden="true" onerror="this.parent.classList.add('github-emoji-fallback')"></span> 1-object</p>
+ <img src="1-object-example.png" alt="1-object-example" style="zoom:33%;">
+<h4 id="1-call-site-vs-1-object">1-call-site vs 1-object</h4>
+<p>从下图中分析可以看出，1-call-site 在这个代码示例中会产生误报（如果采用 2-call-site 则不会）。</p>
+ <img src="1-call-site-vs-1-object.png" alt="1-call-site-vs-1-object" style="zoom:33%;">
+<p>从调用图中也可以看出区别：</p>
+ <img src="call-graph-vs.png" alt="call-graph-vs" style="zoom:30%;">
+<p>但是 Object Sensitivity 不一定就比 Call-Site Sensitivity 要好，例如对于之前的代码示例，1-Object Sensitivity 会造成误报。</p>
+ <img src="previous-code-vs.png" alt="previous-code-vs" style="zoom:33%;">
+<h4 id="Call-Site-vs-Object-Sensitivity">Call-Site vs. Object Sensitivity</h4>
+<ul>
+<li>理论上二者的精度无法比较的</li>
+<li>但实际对于 OO 语言而言，Object Sensitivity 要优于 Call-Site Sensitivity</li>
+</ul>
+<p>从真实的实验对比可以看出，Object Sensitivity 在效率和精度上都比 Call-Site Sensitivity 要更优。</p>
+ <img src="Call-Site-vs-Object.png" alt="Call-Site-vs-Object" style="zoom:33%;">
+<h3 id="Type-Sensitivity">Type Sensitivity</h3>
+<p><span class="katex-display"><span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><semantics><mrow><mstyle mathcolor="red"><mi>S</mi><mi>e</mi><mi>l</mi><mi>e</mi><mi>c</mi><mi>t</mi></mstyle><mo stretchy="false">(</mo><mi mathvariant="normal">_</mi><mo separator="true">,</mo><mi mathvariant="normal">_</mi><mo separator="true">,</mo><msup><mi>c</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>:</mo><msub><mi>o</mi><mi>i</mi></msub><mo stretchy="false">)</mo><mo>=</mo><mo stretchy="false">[</mo><msup><mi>t</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msup><mi>t</mi><mrow><mo mathvariant="normal">′</mo><mo mathvariant="normal">′</mo></mrow></msup><mo separator="true">,</mo><mstyle mathcolor="red"><mi>I</mi><mi>n</mi><mi>T</mi><mi>y</mi><mi>p</mi><mi>e</mi></mstyle><mo stretchy="false">(</mo><msub><mi>o</mi><mi>i</mi></msub><mo stretchy="false">)</mo><mo stretchy="false">]</mo><mspace linebreak="newline"></mspace><mtext>where&nbsp;</mtext><msup><mi>c</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo>=</mo><mo stretchy="false">[</mo><msup><mi>t</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mo separator="true">,</mo><mo>…</mo><mo separator="true">,</mo><msup><mi>t</mi><mrow><mo mathvariant="normal">′</mo><mo mathvariant="normal">′</mo></mrow></msup><mo stretchy="false">]</mo></mrow><annotation encoding="application/x-tex">\textcolor{red}{Select}(\_,\_,c':o_i)=[t',\ldots,t'',\textcolor{red}{InType}(o_i)] \\
+\text{where }c'=[t',\ldots,t'']
+</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.1119em;vertical-align:-0.31em;"></span><span class="mord mathnormal" style="margin-right:0.05764em;color:red;">S</span><span class="mord mathnormal" style="color:red;">e</span><span class="mord mathnormal" style="margin-right:0.01968em;color:red;">l</span><span class="mord mathnormal" style="color:red;">ec</span><span class="mord mathnormal" style="color:red;">t</span><span class="mopen">(</span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord" style="margin-right:0.02778em;">_</span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">:</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">o</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0519em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′′</span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord mathnormal" style="margin-right:0.07847em;color:red;">I</span><span class="mord mathnormal" style="color:red;">n</span><span class="mord mathnormal" style="margin-right:0.13889em;color:red;">T</span><span class="mord mathnormal" style="margin-right:0.03588em;color:red;">y</span><span class="mord mathnormal" style="color:red;">p</span><span class="mord mathnormal" style="color:red;">e</span><span class="mopen">(</span><span class="mord"><span class="mord mathnormal">o</span><span class="msupsub"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.3117em;"><span style="top:-2.55em;margin-left:0em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mathnormal mtight">i</span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.15em;"><span></span></span></span></span></span></span><span class="mclose">)]</span></span><span class="mspace newline"></span><span class="base"><span class="strut" style="height:0.8019em;"></span><span class="mord text"><span class="mord">where&nbsp;</span></span><span class="mord"><span class="mord mathnormal">c</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em;"></span></span><span class="base"><span class="strut" style="height:1.0519em;vertical-align:-0.25em;"></span><span class="mopen">[</span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="minner">…</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mpunct">,</span><span class="mspace" style="margin-right:0.1667em;"></span><span class="mord"><span class="mord mathnormal">t</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.8019em;"><span style="top:-3.113em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′′</span></span></span></span></span></span></span></span></span><span class="mclose">]</span></span></span></span></span></p>
+<p>每一个上下文都是一个 type list</p>
+<ul>
+<li>对于一个方法调用，将 receiver object 的创建点的类型及其 heap context 作为 callee context</li>
+<li>Type Sensitivity 是 Object Sensitivity 的一个更粗糙的抽象</li>
+</ul>
+ <img src="Type-Sensitivity-example.png" alt="Type-Sensitivity-example" style="zoom:33%;">
+<p>对于如下代码对比 Type Sensitivity 和 Object Sensitivity：</p>
+ <img src="Type-vs-Object.png" alt="Type-vs-Object" style="zoom:33%;">
+<p>从真实的实验对比可以得出结论：</p>
+<ul>
+<li>Precision: object &gt; type &gt; call-site</li>
+<li>Efficiency: type &gt; object &gt; call-site</li>
+</ul>
+ <img src="CS-Variants-comparison.png" alt="CS-Variants-comparison" style="zoom:33%;">
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta">Author: </span><span class="post-copyright-info"><a href="mailto:undefined">car0ta</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta">Link: </span><span class="post-copyright-info"><a href="https://car0ta.github.io/2022/05/18/Static-Program-Analysis-Pointer-Analysis-Context-Sensitivity/">https://car0ta.github.io/2022/05/18/Static-Program-Analysis-Pointer-Analysis-Context-Sensitivity/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta">Copyright Notice: </span><span class="post-copyright-info">All articles in this blog are licensed under <a target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a> unless stating additionally.</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Static-Program-Analysis/">Static Program Analysis</a></div><div class="post_share"><div class="social-share" data-image="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/social-share.js/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/social-share.js/dist/js/social-share.min.js" defer></script></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>Catalog</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#Motivation-3"><span class="toc-text">Motivation</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Introduction-2"><span class="toc-text">Introduction</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#C-I-vs-C-S"><span class="toc-text">C.I. vs C.S.</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Context-Sensitive-Heap"><span class="toc-text">Context-Sensitive Heap</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Context-Sensitive-Pointer-Analysis-Rules"><span class="toc-text">Context Sensitive Pointer Analysis: Rules</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Domains"><span class="toc-text">Domains</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Rules-Without-Call"><span class="toc-text">Rules: Without Call</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Rule-Call"><span class="toc-text">Rule: Call</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Context-Sensitive-Pointer-Analysis-Algorithms"><span class="toc-text">Context Sensitive Pointer Analysis: Algorithms</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Pointer-Flow-Graph-with-C-S"><span class="toc-text">Pointer Flow Graph with C.S.</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Pointer-Flow-Graph-Edges"><span class="toc-text">Pointer Flow Graph: Edges</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Pointer-Flow-Graph-Call"><span class="toc-text">Pointer Flow Graph: Call</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#C-S-Pointer-Analysis-Algorithm"><span class="toc-text">C.S. Pointer Analysis: Algorithm</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#Context-Sensitivity-Variants"><span class="toc-text">Context Sensitivity Variants</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Call-Site-Sensitivity"><span class="toc-text">Call-Site Sensitivity</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#k-limiting-Context-Abstraction"><span class="toc-text">k-limiting Context Abstraction</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#k-Call-Site-Sensitivity-k-CFA"><span class="toc-text">k-Call-Site Sensitivity&#x2F;k-CFA</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Object-Sensitivity"><span class="toc-text">Object Sensitivity</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-call-site-vs-1-object"><span class="toc-text">1-call-site vs 1-object</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#Call-Site-vs-Object-Sensitivity"><span class="toc-text">Call-Site vs. Object Sensitivity</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#Type-Sensitivity"><span class="toc-text">Type Sensitivity</span></a></li></ol></li></ol></div></div></div></div></main><footer id="footer" style="background-image: url('data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7')"><div id="footer-wrap"><div class="copyright">&copy;2019 - 2023 By car0ta</div><div class="framework-info"><span>Framework </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>Theme </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="Read Mode"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="Switch Between Light And Dark Mode"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="Toggle between single-column and double-column"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside_config" type="button" title="Setting"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="Table Of Contents"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="Back To Top"><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script><script>var preloader = {
+  endLoading: () => {
+    document.body.style.overflow = 'auto';
+    document.getElementById('loading-box').classList.add("loaded")
+  },
+  initLoading: () => {
+    document.body.style.overflow = '';
+    document.getElementById('loading-box').classList.remove("loaded")
+
+  }
+}
+window.addEventListener('load',preloader.endLoading())</script><div class="js-pjax"><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/katex.min.css"><script src="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/copy-tex.min.js"></script><link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/katex@latest/dist/contrib/copy-tex.css"><script>(() => {
+  document.querySelectorAll('#article-container span.katex-display').forEach(item => {
+    btf.wrap(item, 'div', { class: 'katex-wrap'})
+  })
+})()</script><script>(() => {
+  const $mermaidWrap = document.querySelectorAll('#article-container .mermaid-wrap')
+  if ($mermaidWrap.length) {
+    window.runMermaid = () => {
+      window.loadMermaid = true
+      const theme = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'default'
+
+      Array.from($mermaidWrap).forEach((item, index) => {
+        const mermaidSrc = item.firstElementChild
+        const mermaidThemeConfig = '%%{init:{ \'theme\':\'' + theme + '\'}}%%\n'
+        const mermaidID = 'mermaid-' + index
+        const mermaidDefinition = mermaidThemeConfig + mermaidSrc.textContent
+        mermaid.mermaidAPI.render(mermaidID, mermaidDefinition, (svgCode) => {
+          mermaidSrc.insertAdjacentHTML('afterend', svgCode)
+        })
+      })
+    }
+
+    const loadMermaid = () => {
+      window.loadMermaid ? runMermaid() : getScript('https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js').then(runMermaid)
+    }
+
+    window.pjax ? loadMermaid() : document.addEventListener('DOMContentLoaded', loadMermaid)
+  }
+})()</script></div><script defer="defer" id="fluttering_ribbon" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/canvas-fluttering-ribbon.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script></div></body></html>
