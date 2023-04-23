@@ -6,7 +6,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="https://car0ta.github.io/"/>
-  <updated>2023-04-13T02:56:24.124Z</updated>
+  <updated>2023-04-23T10:52:43.700Z</updated>
   <id>https://car0ta.github.io/</id>
   
   <author>
@@ -15,6 +15,23 @@
   </author>
   
   <generator uri="https://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>Android 安全学习之路</title>
+    <link href="https://car0ta.github.io/2023/04/23/Android-Security-Learning-Road/"/>
+    <id>https://car0ta.github.io/2023/04/23/Android-Security-Learning-Road/</id>
+    <published>2023-04-23T09:17:53.000Z</published>
+    <updated>2023-04-23T10:52:43.700Z</updated>
+    
+    <summary type="html">
+    
+    </summary>
+    
+    
+      <category term="Android Security" scheme="https://car0ta.github.io/categories/Android-Security/"/>
+    
+    
+  </entry>
   
   <entry>
     <title>Static Program Analysis (IFDS)</title>
@@ -420,31 +437,6 @@
     
     
       <category term="Static Program Analysis" scheme="https://car0ta.github.io/tags/Static-Program-Analysis/"/>
-    
-  </entry>
-  
-  <entry>
-    <title>Study Record</title>
-    <link href="https://car0ta.github.io/2022/04/13/Study-Record/"/>
-    <id>https://car0ta.github.io/2022/04/13/Study-Record/</id>
-    <published>2022-04-13T11:37:53.000Z</published>
-    <updated>2022-09-08T11:18:04.354Z</updated>
-    
-    <content type="html"><![CDATA[<h2 id="2022">2022</h2><h3 id="4-11">4.11</h3><p>Android 13 Developer OverView 一览</p><p><a href="https://mp.weixin.qq.com/s/CvGwijJtXaK_o1WQ_mc_tQ">https://mp.weixin.qq.com/s/CvGwijJtXaK_o1WQ_mc_tQ</a></p><p>APTMalInsight：基于系统调用信息和本体知识框架识别和认知APT恶意软件</p><p><a href="https://mp.weixin.qq.com/s/GEwV3EiobUjI2XdX1q8Cuw">https://mp.weixin.qq.com/s/GEwV3EiobUjI2XdX1q8Cuw</a></p><p>Large-scale Security Measurements on the Android Firmware Ecosystem</p><p><a href="https://mp.weixin.qq.com/s/ykvCJ8biYHunpxjIGW8-uA">https://mp.weixin.qq.com/s/ykvCJ8biYHunpxjIGW8-uA</a></p><h3 id="4-18">4.18</h3><p>Android 前台服务</p><p><a href="https://codyi96.github.io/2020/08/02/android-service/">https://codyi96.github.io/2020/08/02/android-service/</a></p><p>Android 应用无响应机制 (ANR)</p><p><a href="http://gityuan.com/2019/04/06/android-anr/">http://gityuan.com/2019/04/06/android-anr/</a></p><p><a href="http://gityuan.com/2016/07/02/android-anr/">http://gityuan.com/2016/07/02/android-anr/</a></p><p>startService 启动过程分析</p><p><a href="http://gityuan.com/2016/03/06/start-service/">http://gityuan.com/2016/03/06/start-service/</a></p><p>安全研究员的自我修养</p><p><a href="https://evilpan.com/2020/12/27/my2020/">https://evilpan.com/2020/12/27/my2020/</a></p><p>Static Program Analysis (Introduction)</p><p><a href="https://www.bilibili.com/video/BV1b7411K7P4">https://www.bilibili.com/video/BV1b7411K7P4</a></p><p>Static Program Analysis (Intermediate Representation)</p><p><a href="https://www.bilibili.com/video/BV1zE411s77Z">https://www.bilibili.com/video/BV1zE411s77Z</a></p><h3 id="4-25">4.25</h3><p>Web3革命：逃离、信仰、大迁徙</p><p><a href="https://mp.weixin.qq.com/s/_fZxTDOr2n1IQySjVODB8A">https://mp.weixin.qq.com/s/_fZxTDOr2n1IQySjVODB8A</a></p><p>PHYjacking: Physical Input Hijacking for Zero-Permission Authorization Attacks on Android</p><p><a href="https://mp.weixin.qq.com/s/hPIfR-NmU-XT8ANNbClBIw">https://mp.weixin.qq.com/s/hPIfR-NmU-XT8ANNbClBIw</a></p><p>Static Program Analysis (Data Flow Analysis-Applications)</p><h3 id="5-9">5.9</h3><p>FRED: Identifying File Re-Delegation in Android System Services</p><p><a href="https://mp.weixin.qq.com/s/h3UQb5eRKKizffM57KzSXg">https://mp.weixin.qq.com/s/h3UQb5eRKKizffM57KzSXg</a></p><p>Probe the Proto: Measuring Client-Side Prototype Pollution Vulnerabilities of One Million Real-world Websites</p><p><a href="https://mp.weixin.qq.com/s/CBgqwgwcB2vOB55lgFvPVQ">https://mp.weixin.qq.com/s/CBgqwgwcB2vOB55lgFvPVQ</a></p><p>代码安全审计之道</p><p><a href="https://evilpan.com/2022/01/22/code-audit/">https://evilpan.com/2022/01/22/code-audit/</a></p><p>阿里味儿的代码审计随想</p><p><a href="https://evilpan.com/2022/05/01/code-audit-thoughts/">https://evilpan.com/2022/05/01/code-audit-thoughts/</a></p><p>Static Program Analysis (Data Flow Analysis-Foundations)</p><p>Static Program Analysis (Interprocedural Analysis)</p><h3 id="5-16">5.16</h3><p>Exploiting memory corruption vulnerabilities on Android</p><p><a href="https://blog.oversecured.com/Exploiting-memory-corruption-vulnerabilities-on-Android/">https://blog.oversecured.com/Exploiting-memory-corruption-vulnerabilities-on-Android/</a></p><p>Static Program Analysis (Pointer Analysis)</p><p>Static Program Analysis (Pointer Analysis-Foundations)</p><h3 id="5-23">5.23</h3><p>Android 嵌套 Intent 的隐患以及解决方案</p><p><a href="https://mp.weixin.qq.com/s/5OdN8jTUGFGVy0exPS6DpQ">https://mp.weixin.qq.com/s/5OdN8jTUGFGVy0exPS6DpQ</a></p><p>Cross-Language Attacks</p><p><a href="https://mp.weixin.qq.com/s/x-KjRaJAdtHT4RZPzN6OGw">https://mp.weixin.qq.com/s/x-KjRaJAdtHT4RZPzN6OGw</a></p><p>Detection of Repackaged Android Malware with Code-Heterogeneity Features</p><p><a href="https://ieeexplore.ieee.org/document/8018581">https://ieeexplore.ieee.org/document/8018581</a></p><p>Static Program Analysis (Pointer Analysis-Context Sensitivity)</p><h3 id="5-30">5.30</h3><p>Ghost in the Binder: Binder Transaction Redirection Attacks in Android System Services (CCS’21)</p><p>PolyScope: Multi-Policy Access Control Analysis to Compute Authorized Attack Operations in Android Systems (Usenix Security’22)</p><p>Preventing and Detecting State Inference Attacks on Android (NDSS’21)</p><p>Exploit the Last Straw That Breaks Android Systems (S&amp;P’22)</p><p>All your app links are belong to us: understanding the threats of instant apps based attacks (FSE’20)</p><h3 id="6-6">6.6</h3><p>Android 13 针对 Intent Filter 安全的再升级</p><p><a href="https://mp.weixin.qq.com/s/zLBnpToeLrVqVG0iRyjaWA">https://mp.weixin.qq.com/s/zLBnpToeLrVqVG0iRyjaWA</a></p><p>Android 12 AppSearch</p><p><a href="https://developer.android.com/guide/topics/search/appsearch">https://developer.android.com/guide/topics/search/appsearch</a></p><h3 id="7-11">7.11</h3><p>沉浸式体验杀猪盘-社、黄、赌汇聚融合</p><p><a href="https://mp.weixin.qq.com/s/A9P5sFsCjEOuKBSAFCb2jA">https://mp.weixin.qq.com/s/A9P5sFsCjEOuKBSAFCb2jA</a></p><p>Mistrust Plugins You Must: A Large-Scale Study Of Malicious Plugins In WordPress Marketplaces</p><p><a href="https://mp.weixin.qq.com/s/GEC82MFProZt36Hswr0k4w">https://mp.weixin.qq.com/s/GEC82MFProZt36Hswr0k4w</a></p><p>Android 静态分析框架从01到10</p><p><a href="https://mp.weixin.qq.com/s/NUu8aOYr5mXSpOIUZeJYfA">https://mp.weixin.qq.com/s/NUu8aOYr5mXSpOIUZeJYfA</a></p><p><a href="https://mp.weixin.qq.com/s/oKm5FgPmmf4-3iediqFsfg">https://mp.weixin.qq.com/s/oKm5FgPmmf4-3iediqFsfg</a></p><p><a href="https://mp.weixin.qq.com/s/-0clY-O7uODpzAzacQCuVA">https://mp.weixin.qq.com/s/-0clY-O7uODpzAzacQCuVA</a></p><h3 id="8-22">8.22</h3><p>Android 中特殊的攻击面</p><p><a href="https://paper.seebug.org/1174/">https://paper.seebug.org/1174/</a></p><p><a href="https://paper.seebug.org/1175/">https://paper.seebug.org/1175/</a></p><p><a href="https://paper.seebug.org/1269/">https://paper.seebug.org/1269/</a></p><h3 id="9-4">9.4</h3><p>Android 应用沙盒机制</p><p><a href="https://wrlus.com/android-security/android-app-protect/">https://wrlus.com/android-security/android-app-protect/</a></p><h2 id="TODO">TODO</h2>]]></content>
-    
-    <summary type="html">
-    
-      
-      
-        &lt;h2 id=&quot;2022&quot;&gt;2022&lt;/h2&gt;
-&lt;h3 id=&quot;4-11&quot;&gt;4.11&lt;/h3&gt;
-&lt;p&gt;Android 13 Developer OverView 一览&lt;/p&gt;
-&lt;p&gt;&lt;a href=&quot;https://mp.weixin.qq.com/s/CvGwijJtXaK_o
-      
-    
-    </summary>
-    
-    
     
   </entry>
   
