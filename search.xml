@@ -4,6 +4,31 @@
   
     
     <entry>
+      <title>小程序安全概述</title>
+      <link href="/2023/05/29/Mini-Program-Security-Overview/"/>
+      <url>/2023/05/29/Mini-Program-Security-Overview/</url>
+      
+        <content type="html"><![CDATA[<div class="hbe hbe-container" id="hexo-blog-encrypt" data-wpm="Oh, this is an invalid password. Check and try again, please." data-whm="Oh, these decrypted content cannot be verified, but you can still have a look.">  <script id="hbeData" type="hbeData" data-hmacdigest="8ca8a6497f6685fdb3d6c619fbd99ff73fe161b2525f26eded67bc8b10648a00">70be729e6a52b72f4fdc8fff9a1fffa98c9e33084d7519ab40682c9ce44eb929569d512de7fd0c20905db6279ef050810a36be54425c739525e990079d28d372fb9a480d9077e8a58abb34fbb543b9bc5c5cfab77cc93aae0993f534e2894c82</script>  <div class="hbe hbe-content">    <div class="hbe hbe-input hbe-input-xray">      <input class="hbe hbe-input-field hbe-input-field-xray" type="password" id="hbePass">      <label class="hbe hbe-input-label hbe-input-label-xray" for="hbePass">        <span class="hbe hbe-input-label-content hbe-input-label-content-xray">Hey, password is required here.</span>      </label>      <svg class="hbe hbe-graphic hbe-graphic-xray" width="300%" height="100%" viewBox="0 0 1200 60" preserveAspectRatio="none">        <path d="M0,56.5c0,0,298.666,0,399.333,0C448.336,56.5,513.994,46,597,46c77.327,0,135,10.5,200.999,10.5c95.996,0,402.001,0,402.001,0"></path>        <path d="M0,2.5c0,0,298.666,0,399.333,0C448.336,2.5,513.994,13,597,13c77.327,0,135-10.5,200.999-10.5c95.996,0,402.001,0,402.001,0"></path>      </svg>    </div>  </div></div><script data-pjax src="/lib/hbe.js"></script><link href="/css/hbe.style.css" rel="stylesheet" type="text/css">]]></content>
+      
+      
+      <categories>
+          
+          <category> Mini Program Security </category>
+          
+      </categories>
+      
+      
+        <tags>
+            
+            <tag> private </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Android 安全学习之路</title>
       <link href="/2023/04/23/Android-Security-Learning-Road/"/>
       <url>/2023/04/23/Android-Security-Learning-Road/</url>

@@ -2,6 +2,15 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://car0ta.github.io/2023/05/29/Mini-Program-Security-Overview/</loc>
+    
+    <lastmod>2023-05-29</lastmod>
+    
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  
+  <url>
     <loc>https://car0ta.github.io/2023/04/23/Android-Security-Learning-Road/</loc>
     
     <lastmod>2023-05-29</lastmod>
@@ -205,6 +214,13 @@
   </url>
   
   <url>
+    <loc>https://car0ta.github.io/tags/private/</loc>
+    <lastmod>2023-05-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
     <loc>https://car0ta.github.io/tags/Static-Program-Analysis/</loc>
     <lastmod>2023-05-29</lastmod>
     <changefreq>weekly</changefreq>
@@ -229,6 +245,13 @@
   
   <url>
     <loc>https://car0ta.github.io/categories/Android-OS/</loc>
+    <lastmod>2023-05-29</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.2</priority>
+  </url>
+  
+  <url>
+    <loc>https://car0ta.github.io/categories/Mini-Program-Security/</loc>
     <lastmod>2023-05-29</lastmod>
     <changefreq>weekly</changefreq>
     <priority>0.2</priority>
